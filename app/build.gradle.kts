@@ -7,12 +7,12 @@ plugins {
 
 android {
   namespace = "dev.supergooey.caloriesnap"
-  compileSdk = 34
+  compileSdk = 35
 
   defaultConfig {
     applicationId = "dev.supergooey.caloriesnap"
     minSdk = 33
-    targetSdk = 34
+    targetSdk = 35
     versionCode = 1
     versionName = "1.0"
 
@@ -59,6 +59,10 @@ dependencies {
   implementation(libs.androidx.ui.tooling.preview)
   implementation(libs.androidx.material3)
   implementation(libs.androidx.animation)
+
+  implementation(libs.camerax)
+  implementation(libs.camerax.view)
+  implementation(libs.camerax.compose.viewfinder)
 
   implementation(libs.retrofit)
   implementation(libs.okhttp)
