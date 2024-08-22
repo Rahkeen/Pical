@@ -64,6 +64,8 @@ dependencies {
   implementation(libs.camerax.view)
   implementation(libs.camerax.compose.viewfinder)
 
+  implementation(libs.accompanist.permissions)
+
   implementation(libs.retrofit)
   implementation(libs.okhttp)
   implementation(libs.kotlin.serialization.json)
