@@ -16,6 +16,7 @@ okhttp = "4.12.0"
 kotlin-serialization-json = "1.7.1"
 camera = "1.3.4"
 camera-compose = "1.0.0-alpha02"
+accompanist-permissions = "0.35.1-alpha"
 compose-bom = "2024.08.00"
 
 [libraries]
@@ -42,6 +43,9 @@ androidx-animation = { group = "androidx.compose.animation", name = "animation",
 camerax = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
 camerax-compose-viewfinder = { group = "androidx.camera", name = "camera-viewfinder-compose", version.ref = "camera-compose" }
+
+# Accompanist
+accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist-permissions"}
 
 # Networking
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
