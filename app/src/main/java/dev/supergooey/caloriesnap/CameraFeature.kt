@@ -3,7 +3,7 @@ package dev.supergooey.caloriesnap
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.util.Log
-import android.view.ViewGroup.LayoutParams
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
@@ -35,11 +35,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewModelScope
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 fun Bitmap.rotate(degrees: Int): Bitmap {
   val matrix = Matrix().apply {
@@ -77,7 +81,7 @@ fun CameraScreen(
       modifier = Modifier.fillMaxSize(),
       factory = { ctx ->
         PreviewView(ctx).apply {
-          layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
+          layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
           setBackgroundColor(android.graphics.Color.BLACK)
           scaleType = PreviewView.ScaleType.FILL_CENTER
         }
@@ -126,7 +130,9 @@ interface CameraFeature {
   }
 }
 
-class CameraViewModel() : ViewModel() {
+class CameraViewModel(
+  private val store: CameraStore
+) : ViewModel() {
   private val internalState = MutableStateFlow(CameraFeature.State())
   val state = internalState.asStateFlow()
 
@@ -134,12 +140,22 @@ class CameraViewModel() : ViewModel() {
     when (action) {
       is CameraFeature.Action.SavePhoto -> {
         Log.d("Camera", "Saved Photo: ${action.bitmap}")
-        internalState.update { current ->
-          current.copy(capturedPhoto = action.bitmap)
+        viewModelScope.launch {
+          val result = store.saveImageLocally(action.bitmap)
+          Log.d("Camera", "Saved Photo Locally: $result")
+          internalState.update { current ->
+            current.copy(capturedPhoto = action.bitmap)
+          }
         }
       }
     }
   }
 
+  @Suppress("UNCHECKED_CAST")
+  class Factory(private val store: CameraStore): ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+      return CameraViewModel(store) as T
+    }
+  }
 }
 
