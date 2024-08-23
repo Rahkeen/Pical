@@ -52,7 +52,7 @@ fun App() {
       val context = LocalContext.current.applicationContext
       val model = viewModel<CameraViewModel>(
         factory = CameraViewModel.Factory(
-          store = CameraStore(context)
+          store = context.cameraStore()
         )
       )
       val state by model.state.collectAsState()

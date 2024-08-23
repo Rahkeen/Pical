@@ -43,5 +43,3 @@ class CameraStore(context: Context) {
     result
   }
 }
-
-private const val FILENAME_FORMAT = "dd-MM-yyyy hh-mm-ss"
