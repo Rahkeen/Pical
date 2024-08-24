@@ -10,6 +10,8 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +28,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -48,8 +51,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 
 fun Bitmap.rotate(degrees: Int): Bitmap {
@@ -69,6 +70,11 @@ fun CameraScreen(
   val lifecycleOwner = LocalLifecycleOwner.current
   val cameraController = remember { LifecycleCameraController(context) }
 
+  val transition = updateTransition(
+    targetState = state.step,
+    label = ""
+  )
+
   fun takePicture() {
     val executor = ContextCompat.getMainExecutor(context)
 
@@ -83,83 +89,75 @@ fun CameraScreen(
     )
   }
 
-  Box(modifier = Modifier.fillMaxSize()) {
-    AndroidView(
-      modifier = Modifier.fillMaxSize(),
-      factory = { ctx ->
-        PreviewView(ctx).apply {
-          layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-          setBackgroundColor(android.graphics.Color.BLACK)
-          scaleType = PreviewView.ScaleType.FILL_CENTER
-        }
-      },
-      update = { view ->
-        view.controller = cameraController
-        cameraController.bindToLifecycle(lifecycleOwner)
-      }
-    )
-
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .windowInsetsPadding(WindowInsets.navigationBars)
-        .padding(16.dp)
-    ) {
-      if (state.messages != null) {
-        Column(
+  when (state.step) {
+    CameraFeatureStep.Camera -> {
+      Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
           modifier = Modifier.fillMaxSize(),
-          verticalArrangement = Arrangement.Center,
-          horizontalAlignment = Alignment.End
-        ) {
-          state.messages.forEach { message ->
-            Box(
-              modifier = Modifier
-                .wrapContentSize()
-                .clip(RoundedCornerShape(
-                  topStart = 8.dp,
-                  bottomStart = 8.dp,
-                  topEnd = 8.dp
-                ))
-                .background(Color.White)
-                .padding(8.dp)
-            ) {
-              Text(text = message.text, color = Color.Black)
+          factory = { ctx ->
+            PreviewView(ctx).apply {
+              layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+              setBackgroundColor(android.graphics.Color.BLACK)
+              scaleType = PreviewView.ScaleType.FIT_CENTER
             }
+          },
+          update = { view ->
+            view.controller = cameraController
+            cameraController.bindToLifecycle(lifecycleOwner)
           }
-        }
-      }
-      Box(
-        modifier = Modifier
-          .size(60.dp)
-          .clip(CircleShape)
-          .clickable { takePicture() }
-          .background(color = CoolRed)
-          .align(Alignment.BottomCenter),
-      )
-
-      if (state.capturedPhoto != null) {
-        Image(
-          modifier = Modifier
-            .padding(start = 16.dp)
-            .size(100.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .border(width = 2.dp, color = Color(1f, 1f, 1f), shape = RoundedCornerShape(16.dp))
-            .align(Alignment.BottomStart),
-          bitmap = state.capturedPhoto.asImageBitmap(),
-          contentScale = ContentScale.Crop,
-          contentDescription = ""
         )
+
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(16.dp)
+        ) {
+          Box(
+            modifier = Modifier
+              .size(60.dp)
+              .clip(CircleShape)
+              .clickable { takePicture() }
+              .background(color = CoolRed)
+              .align(Alignment.BottomCenter),
+          )
+        }
       }
     }
 
+    CameraFeatureStep.Analysis -> {
+
+    }
+
+    CameraFeatureStep.FreezeFrame -> {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(color = Color.Black),
+        contentAlignment = Alignment.Center
+      ) {
+        if (state.capturedPhoto != null) {
+          Image(
+            bitmap = state.capturedPhoto.asImageBitmap(),
+            contentDescription = "Photo"
+          )
+        }
+      }
+    }
   }
 }
 
+enum class CameraFeatureStep {
+  Camera,
+  FreezeFrame,
+  Analysis
+}
 
 interface CameraFeature {
   data class State(
     val capturedPhoto: Bitmap? = null,
-    val messages: List<MessageContent.Text>? = null
+    val messages: List<MessageContent.Text>? = null,
+    val step: CameraFeatureStep = CameraFeatureStep.Camera
   )
 
   sealed class Action {
@@ -180,34 +178,42 @@ class CameraViewModel(
         viewModelScope.launch {
           val result = store.saveImageLocally(action.bitmap)
           Log.d("Camera", "Saved Photo Locally: $result")
-          val request = MessagesRequest(
-            messages = listOf(
-              Message(
-                role = "user",
-                content = listOf(
-                  MessageContent.Image(
-                    source = ImageSource(
-                      data = action.bitmap.toBase64()
-                    )
-                  ),
-                  MessageContent.Text("What is in this image?")
-                )
-              )
+          internalState.update {
+            it.copy(
+              capturedPhoto = action.bitmap,
+              step = CameraFeatureStep.FreezeFrame
             )
-          )
-          val response = ImageToCalorieClient.api.getMessages(request)
-          Log.d("Camera", "Claude Response: $response")
-
-          if (response.isSuccessful) {
-            internalState.update { current ->
-              current.copy(
-                capturedPhoto = action.bitmap,
-                messages = response.body()!!.content.filterIsInstance<MessageContent.Text>()
-              )
-            }
-          } else {
-            Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
           }
+//          val request = MessagesRequest(
+//            messages = listOf(
+//              Message(
+//                role = "user",
+//                content = listOf(
+//                  MessageContent.Image(
+//                    source = ImageSource(
+//                      data = action.bitmap.toBase64()
+//                    )
+//                  ),
+//                  MessageContent.Text("What is in this image?")
+//                )
+//              )
+//            )
+//          )
+
+          // Send it to Claude
+//          val response = ImageToCalorieClient.api.getMessages(request)
+//          Log.d("Camera", "Claude Response: $response")
+//
+//          if (response.isSuccessful) {
+//            internalState.update { current ->
+//              current.copy(
+//                capturedPhoto = action.bitmap,
+//                messages = response.body()!!.content.filterIsInstance<MessageContent.Text>()
+//              )
+//            }
+//          } else {
+//            Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
+//          }
         }
       }
     }
