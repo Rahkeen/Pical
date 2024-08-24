@@ -11,6 +11,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -48,7 +49,12 @@ fun App() {
       }
     }
     composable("camera") {
-      val model = viewModel<CameraViewModel>()
+      val context = LocalContext.current.applicationContext
+      val model = viewModel<CameraViewModel>(
+        factory = CameraViewModel.Factory(
+          store = context.cameraStore()
+        )
+      )
       val state by model.state.collectAsState()
       CameraScreen(
         state = state,
