@@ -11,27 +11,19 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.BoundsTransform
-import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.EaseInOutQuad
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.EaseInOutQuint
 import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -39,13 +31,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -63,7 +51,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -88,13 +75,11 @@ fun CameraScreen(
   val lifecycleOwner = LocalLifecycleOwner.current
   val cameraController = remember { LifecycleCameraController(context) }
   val transition = updateTransition(targetState = state.step, label = "Camera Step")
-
+  val animationDuration = remember { 800 }
+  val easing = remember { EaseInOutQuint }
   val cornerRadius by transition.animateDp(
     transitionSpec = {
-      spring(
-        stiffness = Spring.StiffnessLow,
-        dampingRatio = Spring.DampingRatioLowBouncy
-      )
+      tween(durationMillis = animationDuration, easing = easing)
     },
     label = "Image Radius"
   ) { step ->
@@ -145,7 +130,6 @@ fun CameraScreen(
                   cameraController.bindToLifecycle(lifecycleOwner)
                 }
               )
-
               Box(
                 modifier = Modifier
                   .fillMaxSize()
@@ -167,10 +151,7 @@ fun CameraScreen(
                   .sharedElement(
                     state = rememberSharedContentState(key = "image"),
                     boundsTransform = { initialBounds, targetBounds ->
-                      spring(
-                        stiffness = Spring.StiffnessLow,
-                        dampingRatio = Spring.DampingRatioLowBouncy
-                      )
+                      tween(durationMillis = animationDuration, easing = easing)
                     },
                     animatedVisibilityScope = this@AnimatedContent
                   )
@@ -198,10 +179,7 @@ fun CameraScreen(
                     state = rememberSharedContentState("image"),
                     animatedVisibilityScope = this@AnimatedContent,
                     boundsTransform = { initialBounds, targetBounds ->
-                      spring(
-                        stiffness = Spring.StiffnessLow,
-                        dampingRatio = Spring.DampingRatioLowBouncy
-                      )
+                      tween(durationMillis = animationDuration, easing = easing)
                     },
                   )
                   .size(300.dp)
