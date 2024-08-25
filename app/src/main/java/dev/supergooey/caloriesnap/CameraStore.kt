@@ -12,7 +12,7 @@ class CameraStore(context: Context) {
   private val resolver = context.contentResolver
   private val contentUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
-  suspend fun saveImageLocally(bitmap: Bitmap): Result<Unit> = withContext(Dispatchers.IO) {
+  suspend fun saveImageLocally(bitmap: Bitmap): Result<String> = withContext(Dispatchers.IO) {
     val timestamp = System.currentTimeMillis()
     val contentValues = ContentValues().apply   {
       put(MediaStore.Images.Media.DISPLAY_NAME, "image-$timestamp.jpg")
@@ -24,7 +24,7 @@ class CameraStore(context: Context) {
 
     val imageMediaStoreUri = resolver.insert(contentUri, contentValues)
 
-    val result: Result<Unit> = imageMediaStoreUri?.let { uri ->
+    val result: Result<String> = imageMediaStoreUri?.let { uri ->
       runCatching {
         resolver.openOutputStream(uri).use { stream ->
           checkNotNull(stream)
@@ -33,7 +33,7 @@ class CameraStore(context: Context) {
           contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
           resolver.update(uri, contentValues, null, null)
         }
-        Result.success(Unit)
+        Result.success(uri.toString())
       }.getOrElse { e ->
         resolver.delete(uri, null, null)
         Result.failure(e)

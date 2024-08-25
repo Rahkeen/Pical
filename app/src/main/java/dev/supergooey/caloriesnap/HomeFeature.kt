@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -23,38 +24,46 @@ import com.google.accompanist.permissions.rememberPermissionState
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(goToCamera: () -> Unit = {}) {
-  val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
 
-  Scaffold(
-    floatingActionButton = {
-      LargeFloatingActionButton(
-        onClick = {
-          if (cameraPermissionState.status.isGranted) {
-            goToCamera()
-          } else {
-            cameraPermissionState.launchPermissionRequest()
-          }
+    Scaffold(
+        floatingActionButton = {
+            LargeFloatingActionButton(
+                onClick = {
+                    if (cameraPermissionState.status.isGranted) {
+                        goToCamera()
+                    } else {
+                        cameraPermissionState.launchPermissionRequest()
+                    }
+                }
+            ) {
+                Icon(
+                    modifier = Modifier.size(32.dp),
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Take a picture"
+                )
+            }
         }
-      ) {
-        Icon(
-          modifier = Modifier.size(32.dp),
-          imageVector = Icons.Default.Person,
-          contentDescription = "Take a picture"
-        )
-      }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .consumeWindowInsets(paddingValues)
+                .background(color = MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
+        ) {
+        }
     }
-  ) { paddingValues ->
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .consumeWindowInsets(paddingValues)
-        .background(color = MaterialTheme.colorScheme.background),
-      contentAlignment = Alignment.Center
-    ) {
-    }
-  }
 }
 
-class HomeViewModel: ViewModel() {
+class HomeViewModel(db: MealLogDatabase) : ViewModel() {
 
+
+    @Suppress("UNCHECKED_CAST")
+    class Factory(private val db: MealLogDatabase) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return HomeViewModel(db) as T
+        }
+    }
 }
+

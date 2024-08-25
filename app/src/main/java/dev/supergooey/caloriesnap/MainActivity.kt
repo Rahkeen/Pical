@@ -24,57 +24,64 @@ import androidx.navigation.compose.rememberNavController
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 
 class MainActivity : ComponentActivity() {
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    enableEdgeToEdge()
-    setContent {
-      CalorieSnapTheme {
-        App()
-      }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            CalorieSnapTheme {
+                App()
+            }
+        }
     }
-  }
 }
 
 @Composable
 fun App() {
-  val navController = rememberNavController()
-
-  NavHost(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(color = MaterialTheme.colorScheme.background),
-    navController = navController,
-    startDestination = "home",
-    enterTransition = { scaleIn(initialScale = 1.10f) + fadeIn() },
-    exitTransition = { scaleOut(targetScale = 0.95f) + fadeOut() },
-    popEnterTransition = { scaleIn(initialScale = 0.95f) + fadeIn() },
-    popExitTransition = { scaleOut(targetScale = 1.10f) + fadeOut() }
-  ) {
-    composable("home") {
-      HomeScreen {
-        navController.navigate("camera")
-      }
+    val navController = rememberNavController()
+    val context = LocalContext.current.applicationContext
+    NavHost(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = MaterialTheme.colorScheme.background),
+        navController = navController,
+        startDestination = "home",
+        enterTransition = { scaleIn(initialScale = 1.10f) + fadeIn() },
+        exitTransition = { scaleOut(targetScale = 0.95f) + fadeOut() },
+        popEnterTransition = { scaleIn(initialScale = 0.95f) + fadeIn() },
+        popExitTransition = { scaleOut(targetScale = 1.10f) + fadeOut() }
+    ) {
+        composable("home") {
+            val homeViewModel = viewModel<HomeViewModel>(
+                factory = HomeViewModel.Factory(
+                    db = MealLogDatabase.getDatabase(context)
+                )
+            )
+            HomeScreen {
+                navController.navigate("camera")
+            }
+        }
+        composable("camera") {
+            val cameraViewModel = viewModel<CameraViewModel>(
+                factory = CameraViewModel.Factory(
+                    store = context.cameraStore(),
+                    db = MealLogDatabase.getDatabase(context)
+                )
+            )
+            val state by cameraViewModel.state.collectAsState()
+            CameraScreen(
+                state = state,
+                actions = {
+                    cameraViewModel.actions(it, navController)
+                }
+            )
+        }
     }
-    composable("camera") {
-      val context = LocalContext.current.applicationContext
-      val model = viewModel<CameraViewModel>(
-        factory = CameraViewModel.Factory(
-          store = context.cameraStore()
-        )
-      )
-      val state by model.state.collectAsState()
-      CameraScreen(
-        state = state,
-        actions = model::actions
-      )
-    }
-  }
 }
 
 @Preview
 @Composable
 fun AppPreview() {
-  CalorieSnapTheme {
-    App()
-  }
+    CalorieSnapTheme {
+        App()
+    }
 }
