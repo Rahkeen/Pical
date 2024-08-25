@@ -17,6 +17,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.EaseInOutQuad
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
@@ -45,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,6 +87,22 @@ fun CameraScreen(
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
   val cameraController = remember { LifecycleCameraController(context) }
+  val transition = updateTransition(targetState = state.step, label = "Camera Step")
+
+  val cornerRadius by transition.animateDp(
+    transitionSpec = {
+      spring(
+        stiffness = Spring.StiffnessLow,
+        dampingRatio = Spring.DampingRatioLowBouncy
+      )
+    },
+    label = "Image Radius"
+  ) { step ->
+    when (step) {
+      CameraFeatureStep.Camera -> 0.dp
+      CameraFeatureStep.Analysis -> 12.dp
+    }
+  }
 
   fun takePicture() {
     val executor = ContextCompat.getMainExecutor(context)
@@ -101,10 +119,8 @@ fun CameraScreen(
   }
 
   SharedTransitionLayout {
-    AnimatedContent(
-      targetState = state.step,
+    transition.AnimatedContent(
       transitionSpec = { fadeIn().togetherWith(fadeOut()) },
-      label = "Camera Step"
     ) { step ->
       when (step) {
         CameraFeatureStep.Camera -> {
@@ -147,13 +163,18 @@ fun CameraScreen(
               }
             } else {
               Image(
-                modifier = Modifier.sharedElement(
-                  state = rememberSharedContentState(key = "image"),
-                  boundsTransform = { initialBounds, targetBounds ->
-                    spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
-                  },
-                  animatedVisibilityScope = this@AnimatedContent
-                ),
+                modifier = Modifier
+                  .sharedElement(
+                    state = rememberSharedContentState(key = "image"),
+                    boundsTransform = { initialBounds, targetBounds ->
+                      spring(
+                        stiffness = Spring.StiffnessLow,
+                        dampingRatio = Spring.DampingRatioLowBouncy
+                      )
+                    },
+                    animatedVisibilityScope = this@AnimatedContent
+                  )
+                  .clip(RoundedCornerShape(cornerRadius)),
                 bitmap = state.capturedPhoto.asImageBitmap(),
                 contentDescription = "Photo"
               )
@@ -162,7 +183,6 @@ fun CameraScreen(
         }
 
         CameraFeatureStep.Analysis -> {
-
           Box(
             modifier = Modifier
               .fillMaxSize()
@@ -178,11 +198,14 @@ fun CameraScreen(
                     state = rememberSharedContentState("image"),
                     animatedVisibilityScope = this@AnimatedContent,
                     boundsTransform = { initialBounds, targetBounds ->
-                      spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                      spring(
+                        stiffness = Spring.StiffnessLow,
+                        dampingRatio = Spring.DampingRatioLowBouncy
+                      )
                     },
                   )
                   .size(300.dp)
-                  .clip(RoundedCornerShape(12.dp)),
+                  .clip(RoundedCornerShape(cornerRadius)),
                 bitmap = state.capturedPhoto.asImageBitmap(),
                 contentScale = ContentScale.Crop,
                 contentDescription = "Photo"
