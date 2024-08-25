@@ -11,7 +11,19 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.BoundsTransform
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.EaseInOutQuad
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +36,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -63,6 +76,7 @@ fun Bitmap.rotate(degrees: Int): Bitmap {
   return Bitmap.createBitmap(this, 0, 0, width, height, matrix, false)
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CameraScreen(
   state: CameraFeature.State,
@@ -71,18 +85,6 @@ fun CameraScreen(
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
   val cameraController = remember { LifecycleCameraController(context) }
-
-  val transition = updateTransition(
-    targetState = state.step,
-    label = ""
-  )
-
-  LaunchedEffect(state.step) {
-    if (state.step == CameraFeatureStep.FreezeFrame) {
-      delay(1000)
-      actions(CameraFeature.Action.Transition(CameraFeatureStep.Analysis))
-    }
-  }
 
   fun takePicture() {
     val executor = ContextCompat.getMainExecutor(context)
@@ -98,72 +100,94 @@ fun CameraScreen(
     )
   }
 
-  transition.AnimatedContent { step ->
-    when (step) {
-      CameraFeatureStep.Camera -> {
-        Box(modifier = Modifier.fillMaxSize()) {
-          AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-              PreviewView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                setBackgroundColor(android.graphics.Color.BLACK)
-                scaleType = PreviewView.ScaleType.FIT_CENTER
+  SharedTransitionLayout {
+    AnimatedContent(
+      targetState = state.step,
+      transitionSpec = { fadeIn().togetherWith(fadeOut()) },
+      label = "Camera Step"
+    ) { step ->
+      when (step) {
+        CameraFeatureStep.Camera -> {
+          Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .background(color = Color.Black),
+            contentAlignment = Alignment.Center
+          ) {
+            if (state.capturedPhoto == null) {
+              AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                  PreviewView(ctx).apply {
+                    layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                    setBackgroundColor(android.graphics.Color.BLACK)
+                    scaleType = PreviewView.ScaleType.FIT_CENTER
+                  }
+                },
+                update = { view ->
+                  view.controller = cameraController
+                  cameraController.bindToLifecycle(lifecycleOwner)
+                }
+              )
+
+              Box(
+                modifier = Modifier
+                  .fillMaxSize()
+                  .windowInsetsPadding(WindowInsets.navigationBars)
+                  .padding(16.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .clickable { takePicture() }
+                    .background(color = CoolRed)
+                    .align(Alignment.BottomCenter),
+                )
               }
-            },
-            update = { view ->
-              view.controller = cameraController
-              cameraController.bindToLifecycle(lifecycleOwner)
+            } else {
+              Image(
+                modifier = Modifier.sharedElement(
+                  state = rememberSharedContentState(key = "image"),
+                  boundsTransform = { initialBounds, targetBounds ->
+                    spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                  },
+                  animatedVisibilityScope = this@AnimatedContent
+                ),
+                bitmap = state.capturedPhoto.asImageBitmap(),
+                contentDescription = "Photo"
+              )
             }
-          )
+          }
+        }
+
+        CameraFeatureStep.Analysis -> {
 
           Box(
             modifier = Modifier
               .fillMaxSize()
-              .windowInsetsPadding(WindowInsets.navigationBars)
-              .padding(16.dp)
+              .background(color = Color.Black)
+              .windowInsetsPadding(WindowInsets.statusBars)
+              .padding(16.dp),
+            contentAlignment = Alignment.TopCenter
           ) {
-            Box(
-              modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .clickable { takePicture() }
-                .background(color = CoolRed)
-                .align(Alignment.BottomCenter),
-            )
-          }
-        }
-      }
-
-      CameraFeatureStep.Analysis -> {
-        Box(
-          modifier = Modifier
-            .fillMaxSize()
-            .background(color = MaterialTheme.colorScheme.background),
-          contentAlignment = Alignment.Center
-        ) {
-          if (state.capturedPhoto != null) {
-            Image(
-              modifier = Modifier.size(300.dp),
-              bitmap = state.capturedPhoto.asImageBitmap(),
-              contentDescription = "Photo"
-            )
-          }
-        }
-      }
-
-      CameraFeatureStep.FreezeFrame -> {
-        Box(
-          modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color.Black),
-          contentAlignment = Alignment.Center
-        ) {
-          if (state.capturedPhoto != null) {
-            Image(
-              bitmap = state.capturedPhoto.asImageBitmap(),
-              contentDescription = "Photo"
-            )
+            if (state.capturedPhoto != null) {
+              Image(
+                modifier = Modifier
+                  .sharedElement(
+                    state = rememberSharedContentState("image"),
+                    animatedVisibilityScope = this@AnimatedContent,
+                    boundsTransform = { initialBounds, targetBounds ->
+                      spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                    },
+                  )
+                  .size(300.dp)
+                  .clip(RoundedCornerShape(12.dp)),
+                bitmap = state.capturedPhoto.asImageBitmap(),
+                contentScale = ContentScale.Crop,
+                contentDescription = "Photo"
+              )
+            }
           }
         }
       }
@@ -173,7 +197,6 @@ fun CameraScreen(
 
 enum class CameraFeatureStep {
   Camera,
-  FreezeFrame,
   Analysis
 }
 
@@ -186,7 +209,7 @@ interface CameraFeature {
 
   sealed class Action {
     data class SavePhoto(val bitmap: Bitmap) : Action()
-    data class Transition(val step: CameraFeatureStep): Action()
+    data class Transition(val step: CameraFeatureStep) : Action()
   }
 }
 
@@ -206,7 +229,7 @@ class CameraViewModel(
           internalState.update {
             it.copy(
               capturedPhoto = action.bitmap,
-              step = CameraFeatureStep.FreezeFrame
+              step = CameraFeatureStep.Analysis
             )
           }
 //          val request = MessagesRequest(
