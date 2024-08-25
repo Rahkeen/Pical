@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +48,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -75,6 +77,13 @@ fun CameraScreen(
     label = ""
   )
 
+  LaunchedEffect(state.step) {
+    if (state.step == CameraFeatureStep.FreezeFrame) {
+      delay(1000)
+      actions(CameraFeature.Action.Transition(CameraFeatureStep.Analysis))
+    }
+  }
+
   fun takePicture() {
     val executor = ContextCompat.getMainExecutor(context)
 
@@ -89,58 +98,73 @@ fun CameraScreen(
     )
   }
 
-  when (state.step) {
-    CameraFeatureStep.Camera -> {
-      Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-          modifier = Modifier.fillMaxSize(),
-          factory = { ctx ->
-            PreviewView(ctx).apply {
-              layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-              setBackgroundColor(android.graphics.Color.BLACK)
-              scaleType = PreviewView.ScaleType.FIT_CENTER
+  transition.AnimatedContent { step ->
+    when (step) {
+      CameraFeatureStep.Camera -> {
+        Box(modifier = Modifier.fillMaxSize()) {
+          AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+              PreviewView(ctx).apply {
+                layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                setBackgroundColor(android.graphics.Color.BLACK)
+                scaleType = PreviewView.ScaleType.FIT_CENTER
+              }
+            },
+            update = { view ->
+              view.controller = cameraController
+              cameraController.bindToLifecycle(lifecycleOwner)
             }
-          },
-          update = { view ->
-            view.controller = cameraController
-            cameraController.bindToLifecycle(lifecycleOwner)
-          }
-        )
+          )
 
+          Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .windowInsetsPadding(WindowInsets.navigationBars)
+              .padding(16.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(60.dp)
+                .clip(CircleShape)
+                .clickable { takePicture() }
+                .background(color = CoolRed)
+                .align(Alignment.BottomCenter),
+            )
+          }
+        }
+      }
+
+      CameraFeatureStep.Analysis -> {
         Box(
           modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(16.dp)
+            .background(color = MaterialTheme.colorScheme.background),
+          contentAlignment = Alignment.Center
         ) {
-          Box(
-            modifier = Modifier
-              .size(60.dp)
-              .clip(CircleShape)
-              .clickable { takePicture() }
-              .background(color = CoolRed)
-              .align(Alignment.BottomCenter),
-          )
+          if (state.capturedPhoto != null) {
+            Image(
+              modifier = Modifier.size(300.dp),
+              bitmap = state.capturedPhoto.asImageBitmap(),
+              contentDescription = "Photo"
+            )
+          }
         }
       }
-    }
 
-    CameraFeatureStep.Analysis -> {
-
-    }
-
-    CameraFeatureStep.FreezeFrame -> {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(color = Color.Black),
-        contentAlignment = Alignment.Center
-      ) {
-        if (state.capturedPhoto != null) {
-          Image(
-            bitmap = state.capturedPhoto.asImageBitmap(),
-            contentDescription = "Photo"
-          )
+      CameraFeatureStep.FreezeFrame -> {
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .background(color = Color.Black),
+          contentAlignment = Alignment.Center
+        ) {
+          if (state.capturedPhoto != null) {
+            Image(
+              bitmap = state.capturedPhoto.asImageBitmap(),
+              contentDescription = "Photo"
+            )
+          }
         }
       }
     }
@@ -162,6 +186,7 @@ interface CameraFeature {
 
   sealed class Action {
     data class SavePhoto(val bitmap: Bitmap) : Action()
+    data class Transition(val step: CameraFeatureStep): Action()
   }
 }
 
@@ -214,6 +239,12 @@ class CameraViewModel(
 //          } else {
 //            Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
 //          }
+        }
+      }
+
+      is CameraFeature.Action.Transition -> {
+        internalState.update {
+          it.copy(step = action.step)
         }
       }
     }
