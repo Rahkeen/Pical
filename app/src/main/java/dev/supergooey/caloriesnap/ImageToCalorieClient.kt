@@ -13,7 +13,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 private const val BASE_URL = "https://api.anthropic.com/v1/"
-private const val API_KEY = "<insert-api-key>"
+private const val API_KEY = BuildConfig.API_KEY
 private const val VERSION = "2023-06-01"
 
 @Serializable
@@ -23,7 +23,8 @@ data class MessagesRequest(
     You are an "Image-to-Calorie" engine. Process the input image, complete these four tasks in order. You response must only be a single JSON object.
     1 - Figure if the image contains a food or not. Based on this, set the field "valid" to either true or false in the JSON object and skip next steps if not.
     2 - Analyze the food in the image and estimate its total calories. Set this value to "total_calories" field in the JSON object.
-    3 - Describe the food in the image with a snarky attitude. Set this description to "food_description" field in the JSON object.
+    3 - Describe the food in the image with a snarky attitude, but keep it concise. If you see something healthy, keep the same snarky attitude but also praise the user a little bit for making a good choice. Set this description to "food_description" field in the JSON object.
+    4 - Create a short 2-4 word title for the food in the image. Be accurate, but have some fun with it! Set this value to "food_title" field in the JSON object.
   """.trimIndent(),
   @SerialName("max_tokens") val maxTokens: Int = 2048,
   val messages: List<Message>
