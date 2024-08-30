@@ -1,6 +1,7 @@
 package dev.supergooey.caloriesnap
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 @Composable
 fun HomeScreen(
   state: HomeFeature.State,
-  goToCamera: () -> Unit = {}
+  navigate: (HomeFeature.Location) -> Unit
 ) {
   val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
 
@@ -54,7 +55,7 @@ fun HomeScreen(
       LargeFloatingActionButton(
         onClick = {
           if (cameraPermissionState.status.isGranted) {
-            goToCamera()
+            navigate(HomeFeature.Location.Camera)
           } else {
             cameraPermissionState.launchPermissionRequest()
           }
@@ -72,8 +73,7 @@ fun HomeScreen(
       modifier = Modifier
         .fillMaxSize()
         .background(color = MaterialTheme.colorScheme.background)
-        .padding(horizontal = 8.dp)
-      ,
+        .padding(horizontal = 8.dp),
       contentPadding = paddingValues,
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -83,17 +83,20 @@ fun HomeScreen(
       items(items = state.logs) { log ->
         Row(
           modifier = Modifier
+            .animateItem()
             .fillMaxWidth()
             .wrapContentHeight()
             .background(color = MaterialTheme.colorScheme.background)
-            .animateItem(),
+            .clickable { navigate(HomeFeature.Location.Log(log.id)) },
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
           if (log.imageUri != null) {
             AsyncImage(
               model = log.imageUri,
-              modifier = Modifier.size(100.dp).clip(RoundedCornerShape(8.dp)),
+              modifier = Modifier
+                .size(100.dp)
+                .clip(RoundedCornerShape(8.dp)),
               contentScale = ContentScale.Crop,
               contentDescription = log.foodDescription
             )
@@ -125,13 +128,18 @@ interface HomeFeature {
   data class State(
     val logs: List<MealLog>
   )
+
+  sealed class Location(val route: String) {
+    data object Camera : Location("camera")
+    data class Log(val id: Int) : Location("log/$id")
+  }
 }
 
 class HomeViewModel(
   logStore: MealLogDatabase
 ) : ViewModel() {
   private val internalState = MutableStateFlow(HomeFeature.State(logs = emptyList()))
-  private val logsFlow = logStore.mealLogDao().getAllMealLogsSortedByTime()
+  private val logsFlow = logStore.mealLogDao().getMealLogsByTime()
   val state = combine(internalState.asStateFlow(), logsFlow) { state, logs ->
     state.copy(logs = logs)
   }.stateIn(

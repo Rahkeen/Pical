@@ -17,10 +17,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavArgument
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 
 class MainActivity : ComponentActivity() {
@@ -39,7 +43,6 @@ class MainActivity : ComponentActivity() {
 fun App() {
     val navController = rememberNavController()
     val context = LocalContext.current.applicationContext
-
     NavHost(
         modifier = Modifier
             .fillMaxSize()
@@ -59,8 +62,8 @@ fun App() {
             )
             val state by model.state.collectAsState()
 
-            HomeScreen(state) {
-                navController.navigate("camera")
+            HomeScreen(state = state) { location ->
+                navController.navigate(location.route)
             }
         }
         composable("camera") {
@@ -77,6 +80,22 @@ fun App() {
                     cameraViewModel.actions(it, navController)
                 }
             )
+        }
+        composable(
+            route = "log/{logId}",
+            arguments = listOf(
+                navArgument("logId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("logId")!!
+            val model = viewModel<FoodEntryViewModel>(
+                factory = FoodEntryViewModel.Factory(
+                    logId = id,
+                    logDatabase = MealLogDatabase.getDatabase(context)
+                )
+            )
+            val state by model.state.collectAsState()
+            FoodEntryScreen(state)
         }
     }
 }
