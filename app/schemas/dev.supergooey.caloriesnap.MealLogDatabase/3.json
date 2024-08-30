@@ -1,12 +1,12 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 2,
-    "identityHash": "4982fb2f610ed0a9085a23c4ca6ff9df",
+    "version": 3,
+    "identityHash": "2f447d4ba9232d91f589e20cf46a7b80",
     "entities": [
       {
         "tableName": "MealLog",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0, `time` INTEGER NOT NULL, `foodTitle` TEXT, `totalCalories` INTEGER NOT NULL, `foodDescription` TEXT, `imageUri` TEXT, `valid` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0, `time` INTEGER NOT NULL, `food_title` TEXT, `total_calories` INTEGER NOT NULL, `food_description` TEXT, `image_uri` TEXT, `valid` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -23,25 +23,25 @@
           },
           {
             "fieldPath": "foodTitle",
-            "columnName": "foodTitle",
+            "columnName": "food_title",
             "affinity": "TEXT",
             "notNull": false
           },
           {
             "fieldPath": "totalCalories",
-            "columnName": "totalCalories",
+            "columnName": "total_calories",
             "affinity": "INTEGER",
             "notNull": true
           },
           {
             "fieldPath": "foodDescription",
-            "columnName": "foodDescription",
+            "columnName": "food_description",
             "affinity": "TEXT",
             "notNull": false
           },
           {
             "fieldPath": "imageUri",
-            "columnName": "imageUri",
+            "columnName": "image_uri",
             "affinity": "TEXT",
             "notNull": false
           },
@@ -65,7 +65,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4982fb2f610ed0a9085a23c4ca6ff9df')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2f447d4ba9232d91f589e20cf46a7b80')"
     ]
   }
 }

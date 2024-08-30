@@ -72,6 +72,14 @@ data class ImageSource(
   val data: String
 )
 
+@Serializable
+data class MealResponse(
+  @SerialName("food_title") val foodTitle: String,
+  @SerialName("food_description") val foodDescription: String,
+  @SerialName("total_calories") val totalCalories: Int,
+  val valid: Boolean,
+)
+
 interface ClaudeService {
 
   @POST("messages")

@@ -42,12 +42,10 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -196,8 +194,8 @@ fun CameraScreen(
             actions(CameraFeature.Action.AnalyzePhoto(state.capturedPhoto!!))
           }
 
-          LaunchedEffect(state.mealLog) {
-            if (state.mealLog == null) {
+          LaunchedEffect(state.mealResponse) {
+            if (state.mealResponse == null) {
               delay(animationDuration.toLong())
               while (true) {
                 rotation.animateTo(
@@ -242,7 +240,7 @@ fun CameraScreen(
                 contentScale = ContentScale.Crop,
                 contentDescription = "Photo"
               )
-              AnimatedVisibility(state.mealLog != null) {
+              AnimatedVisibility(state.mealResponse != null) {
                 Box(
                   modifier = Modifier
                     .align(Alignment.Start)
@@ -268,7 +266,7 @@ fun CameraScreen(
                       )
                       .background(color = Color.White)
                       .align(Alignment.Center),
-                    text = state.mealLog?.foodDescription?.trim() ?: "",
+                    text = state.mealResponse?.foodDescription?.trim() ?: "",
                     color = Color.Black
                   )
                 }
@@ -278,7 +276,7 @@ fun CameraScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
               ) {
-                AnimatedVisibility(state.mealLog?.valid == true) {
+                AnimatedVisibility(state.mealResponse?.valid == true) {
                   Box(
                     modifier = Modifier
                       .wrapContentSize()
@@ -287,12 +285,12 @@ fun CameraScreen(
                       .padding(8.dp)
                   ) {
                     Text(
-                      text = "Calories: ${state.mealLog?.totalCalories}",
+                      text = "Calories: ${state.mealResponse?.totalCalories}",
                       color = Color.Black
                     )
                   }
                 }
-                AnimatedVisibility(state.mealLog?.valid == true) {
+                AnimatedVisibility(state.mealResponse?.valid == true) {
                   Button(
                     onClick = { actions(CameraFeature.Action.LogMeal) },
                     colors = ButtonDefaults.buttonColors(containerColor = CoolGreen)
@@ -318,10 +316,11 @@ enum class CameraFeatureStep {
   Analysis
 }
 
+
 interface CameraFeature {
   data class State(
     val capturedPhoto: Bitmap? = null,
-    val mealLog: MealLog? = null,
+    val mealResponse: MealResponse? = null,
     val step: CameraFeatureStep = CameraFeatureStep.Camera
   )
 
@@ -375,15 +374,16 @@ class CameraViewModel(
           Log.d("Camera", "Claude Response: $response")
 
           if (response.isSuccessful) {
-            val result = store.saveImageLocally(action.bitmap)
-            Log.d("Camera", "Saved Photo Locally: $result")
-            val mealLog: MealLog = Json.decodeFromString(
-              response.body()!!.content.filterIsInstance<MessageContent.Text>()
-                .first().text
+            val meal = Json.decodeFromString<MealResponse>(
+              response.body()!!
+                .content
+                .filterIsInstance<MessageContent.Text>()
+                .first()
+                .text
             )
             internalState.update { current ->
               current.copy(
-                mealLog = mealLog
+                mealResponse = meal
               )
             }
           } else {
@@ -400,9 +400,8 @@ class CameraViewModel(
       CameraFeature.Action.LogMeal -> {
         viewModelScope.launch {
           val uri = store.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
-          val currentTimeMs = System.currentTimeMillis()
-          val mealLog = state.value.mealLog?.copy(time = currentTimeMs, imageUri = uri)
-          mealLog?.let { db.mealLogDao().insertMealLog(mealLog) }
+          val log = state.value.mealResponse!!.toMealLog(uri)
+          db.mealLogDao().insertMealLog(log)
           navController.navigate("home")
         }
       }
@@ -423,5 +422,19 @@ class CameraViewModel(
       return CameraViewModel(store, db) as T
     }
   }
+}
+
+fun MealResponse.toMealLog(
+  imageUri: String?,
+  timestamp: Long = System.currentTimeMillis()
+): MealLog {
+  return MealLog(
+    foodTitle = foodTitle,
+    foodDescription = foodDescription,
+    totalCalories = totalCalories,
+    valid = valid,
+    imageUri = imageUri,
+    time = timestamp
+  )
 }
 
