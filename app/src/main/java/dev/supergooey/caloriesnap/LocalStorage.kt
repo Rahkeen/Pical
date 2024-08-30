@@ -1,6 +1,7 @@
 package dev.supergooey.caloriesnap
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Insert
@@ -25,7 +26,14 @@ interface MealLogDao {
     fun getAllMealLogsSortedByTime(): Flow<List<MealLog>>
 }
 
-@Database(entities = [MealLog::class], version = 1, exportSchema = false)
+@Database(
+    entities = [MealLog::class],
+    version = 2,
+    exportSchema = true,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2)
+    ]
+)
 abstract class MealLogDatabase : RoomDatabase() {
     abstract fun mealLogDao(): MealLogDao
 

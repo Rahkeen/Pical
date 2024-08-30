@@ -1,7 +1,6 @@
 package dev.supergooey.caloriesnap
 
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,21 +9,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MealLog(
     @PrimaryKey
-    @Serializable
     @SerialName("time")
     val time: Long = 0L, //ms
-    @Serializable
-    @SerialName("total_calories")
-    val totalCalories: Int = 0,
-    @Serializable
-    @SerialName("food_description")
-    val foodDescription: String? = null,
-    @Serializable
-    @SerialName("image_uri")
-    val imageUri: String? = null,
-    @Serializable
-    @SerialName("valid")
-    val valid: Boolean
-){
-
-}
+    @SerialName("food_title") val foodTitle: String? = null,
+    @SerialName("total_calories") val totalCalories: Int = 0,
+    @SerialName("food_description") val foodDescription: String? = null,
+    @SerialName("image_uri") val imageUri: String? = null,
+    @SerialName("valid") val valid: Boolean
+)

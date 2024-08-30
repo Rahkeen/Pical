@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
 fun App() {
     val navController = rememberNavController()
     val context = LocalContext.current.applicationContext
+
     NavHost(
         modifier = Modifier
             .fillMaxSize()
@@ -51,12 +52,14 @@ fun App() {
         popExitTransition = { scaleOut(targetScale = 1.10f) + fadeOut() }
     ) {
         composable("home") {
-            val homeViewModel = viewModel<HomeViewModel>(
+            val model = viewModel<HomeViewModel>(
                 factory = HomeViewModel.Factory(
-                    db = MealLogDatabase.getDatabase(context)
+                    logStore = MealLogDatabase.getDatabase(context)
                 )
             )
-            HomeScreen {
+            val state by model.state.collectAsState()
+
+            HomeScreen(state) {
                 navController.navigate("camera")
             }
         }

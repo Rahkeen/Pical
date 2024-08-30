@@ -1,9 +1,15 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
+}
+
+ksp {
+  arg("room.schemaLocation" ,"$projectDir/schemas")
 }
 
 android {
@@ -16,6 +22,12 @@ android {
     targetSdk = 35
     versionCode = 1
     versionName = "1.0"
+
+    val file = project.rootProject.file("project.properties")
+    val properties = Properties().also { it.load(file.inputStream()) }
+    val apiKey = properties.getProperty("CLAUDE_API_KEY")
+
+    buildConfigField("String", "API_KEY", apiKey)
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -39,6 +51,7 @@ android {
   }
   buildFeatures {
     compose = true
+    buildConfig = true
   }
 }
 
@@ -74,6 +87,7 @@ dependencies {
 
   implementation(libs.room.runtime)
   implementation(libs.room.ktx)
+  implementation(libs.coil.compose)
   ksp(libs.room.compiler)
 
   testImplementation(libs.junit)
