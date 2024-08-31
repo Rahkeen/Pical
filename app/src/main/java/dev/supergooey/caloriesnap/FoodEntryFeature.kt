@@ -17,15 +17,20 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,24 +40,37 @@ import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolGreen
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.math.log
 
 @Preview
 @Composable
 private fun FoodEntryScreenPreview() {
   CalorieSnapTheme {
     FoodEntryScreen(
-      state = FoodEntryFeature.State()
+      state = FoodEntryFeature.State(),
+      actions = {},
+      navigate = {},
     )
   }
 }
 
 @Composable
-fun FoodEntryScreen(state: FoodEntryFeature.State) {
+fun FoodEntryScreen(
+  state: FoodEntryFeature.State,
+  actions: (FoodEntryFeature.Action) -> Unit,
+  navigate: (FoodEntryFeature.Location) -> Unit
+) {
+
+  LaunchedEffect(state.finished) {
+    if (state.finished) {
+      navigate(FoodEntryFeature.Location.Back)
+    }
+  }
+
   Column(
     modifier = Modifier
       .fillMaxSize()
@@ -82,7 +100,11 @@ fun FoodEntryScreen(state: FoodEntryFeature.State) {
       )
       BasicTextField(
         value = state.title,
-        onValueChange = { }
+        onValueChange = { actions(FoodEntryFeature.Action.EditTitle(it)) },
+        keyboardOptions = KeyboardOptions(
+          keyboardType = KeyboardType.Text,
+          imeAction = ImeAction.Done
+        )
       ) { innerTextField ->
         Box(
           modifier = Modifier
@@ -111,7 +133,11 @@ fun FoodEntryScreen(state: FoodEntryFeature.State) {
         BasicTextField(
           modifier = Modifier.weight(1f),
           value = "${state.calories}",
-          onValueChange = { }
+          onValueChange = { actions(FoodEntryFeature.Action.EditCalories(if (it.isBlank()) 0 else it.toInt())) },
+          keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number,
+            imeAction = ImeAction.Done
+          )
         ) { innerTextField ->
           Box(
             modifier = Modifier
@@ -144,6 +170,12 @@ fun FoodEntryScreen(state: FoodEntryFeature.State) {
         )
       }
     }
+    Button(
+      onClick = { actions(FoodEntryFeature.Action.Save) },
+      enabled = state.canSave
+    ) {
+      Text("Save")
+    }
   }
 }
 
@@ -152,8 +184,20 @@ interface FoodEntryFeature {
     val title: String = "",
     val calories: Int = 0,
     val description: String = "",
-    val imageUri: String? = null
+    val imageUri: String? = null,
+    val canSave: Boolean = false,
+    val finished: Boolean = false
   )
+
+  sealed interface Action {
+    data class EditTitle(val title: String) : Action
+    data class EditCalories(val calories: Int) : Action
+    data object Save : Action
+  }
+
+  sealed interface Location {
+    data object Back : Location
+  }
 }
 
 class FoodEntryViewModel(
@@ -162,10 +206,12 @@ class FoodEntryViewModel(
 ) : ViewModel() {
   private val internalState = MutableStateFlow(FoodEntryFeature.State())
   val state = internalState.asStateFlow()
+  private var previous: MealLog? = null
 
   init {
     viewModelScope.launch {
       val log = logDatabase.mealLogDao().getMealLog(logId)
+      previous = log
       internalState.update {
         it.copy(
           title = log.foodTitle ?: "",
@@ -177,11 +223,46 @@ class FoodEntryViewModel(
     }
   }
 
+  fun actions(action: FoodEntryFeature.Action) {
+    when (action) {
+      is FoodEntryFeature.Action.EditCalories -> {
+        internalState.update { prev ->
+          prev.copy(
+            calories = action.calories,
+            canSave = previous != null && action.calories != previous!!.totalCalories
+          )
+        }
+      }
+
+      is FoodEntryFeature.Action.EditTitle -> {
+        internalState.update { prev ->
+          prev.copy(
+            title = action.title,
+            canSave = previous != null && action.title != previous!!.foodTitle
+          )
+        }
+      }
+
+      FoodEntryFeature.Action.Save -> {
+        previous?.let { log ->
+          viewModelScope.launch(Dispatchers.IO) {
+            val updatedLog = log.copy(
+              foodTitle = state.value.title,
+              totalCalories = state.value.calories
+            )
+            logDatabase.mealLogDao().updateMealLog(updatedLog)
+            internalState.update { it.copy(finished = true) }
+          }
+        }
+      }
+    }
+  }
+
   @Suppress("UNCHECKED_CAST")
   class Factory(
     private val logId: Int,
     private val logDatabase: MealLogDatabase
-  ): ViewModelProvider.Factory {
+  ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
       return FoodEntryViewModel(logId, logDatabase) as T
     }

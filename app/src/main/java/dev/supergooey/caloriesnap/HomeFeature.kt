@@ -80,7 +80,7 @@ fun HomeScreen(
       item {
         Spacer(modifier = Modifier.height(16.dp))
       }
-      items(items = state.logs) { log ->
+      items(items = state.logs, key = { it.id }) { log ->
         Row(
           modifier = Modifier
             .animateItem()
