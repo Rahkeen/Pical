@@ -29,6 +29,9 @@ interface MealLogDao {
 
   @Query("SELECT * FROM MealLog ORDER BY time DESC")
   fun getMealLogsByTime(): Flow<List<MealLog>>
+
+  @Query("SELECT * FROM MealLog WHERE time BETWEEN :start AND :end ORDER BY time DESC")
+  fun getMealLogsForInterval(start: Long, end: Long): Flow<List<MealLog>>
 }
 
 @Database(

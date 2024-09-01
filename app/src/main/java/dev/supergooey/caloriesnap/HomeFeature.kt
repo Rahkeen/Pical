@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -139,7 +141,11 @@ class HomeViewModel(
   logStore: MealLogDatabase
 ) : ViewModel() {
   private val internalState = MutableStateFlow(HomeFeature.State(logs = emptyList()))
-  private val logsFlow = logStore.mealLogDao().getMealLogsByTime()
+  private val today = todayStartEndInMillis()
+  private val logsFlow = logStore.mealLogDao().getMealLogsForInterval(
+    start = today.start,
+    end = today.end
+  )
   val state = combine(internalState.asStateFlow(), logsFlow) { state, logs ->
     state.copy(logs = logs)
   }.stateIn(
@@ -156,3 +162,16 @@ class HomeViewModel(
   }
 }
 
+data class Today(
+  val start: Long,
+  val end: Long
+)
+
+fun todayStartEndInMillis(): Today  {
+  val start = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).toInstant()
+  val end = start.plus(1, ChronoUnit.DAYS).minusMillis(1)
+  return Today(
+    start = start.toEpochMilli(),
+    end = end.toEpochMilli()
+  )
+}
