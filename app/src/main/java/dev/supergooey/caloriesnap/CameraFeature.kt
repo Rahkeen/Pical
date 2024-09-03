@@ -94,6 +94,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
+import java.time.LocalDate
 
 fun Bitmap.rotate(degrees: Int): Bitmap {
   val matrix = Matrix().apply {
@@ -486,7 +487,7 @@ class CameraViewModel(
         viewModelScope.launch {
           val uri = store.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
           val log = state.value.mealResponse!!.toMealLog(uri)
-          db.mealLogDao().insertMealLog(log)
+          db.mealLogDao().addMealLog(log)
           navController.navigate("home")
         }
       }
@@ -568,7 +569,8 @@ fun MessagesResponse.toMessage(): Message {
 
 fun MealResponse.toMealLog(
   imageUri: String?,
-  timestamp: Long = System.currentTimeMillis()
+  timestamp: Long = System.currentTimeMillis(),
+  date: LocalDate = LocalDate.now()
 ): MealLog {
   return MealLog(
     foodTitle = foodTitle,
@@ -576,7 +578,8 @@ fun MealResponse.toMealLog(
     totalCalories = totalCalories,
     valid = valid,
     imageUri = imageUri,
-    time = timestamp
+    time = timestamp,
+    logDate = date
   )
 }
 

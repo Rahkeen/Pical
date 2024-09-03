@@ -40,7 +40,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
@@ -141,13 +143,10 @@ class HomeViewModel(
   logStore: MealLogDatabase
 ) : ViewModel() {
   private val internalState = MutableStateFlow(HomeFeature.State(logs = emptyList()))
-  private val today = todayStartEndInMillis()
-  private val logsFlow = logStore.mealLogDao().getMealLogsForInterval(
-    start = today.start,
-    end = today.end
-  )
-  val state = combine(internalState.asStateFlow(), logsFlow) { state, logs ->
-    state.copy(logs = logs)
+  private val today = LocalDate.now()
+  private val logsFlow = logStore.mealLogDao().getMealLogsByDay(today).filterNotNull()
+  val state = combine(internalState.asStateFlow(), logsFlow) { state, logsByDay ->
+    state.copy(logs = logsByDay.logs)
   }.stateIn(
     scope = viewModelScope,
     started = SharingStarted.WhileSubscribed(),
