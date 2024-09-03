@@ -25,7 +25,7 @@ data class MessagesRequest(
     2 - Analyze the food in the image and estimate its total calories. Set this value to "total_calories" field in the JSON object.
     3 - Describe the food in the image with a snarky attitude, but keep it concise. If you see something healthy, keep the same snarky attitude but also praise the user a little bit for making a good choice. Set this description to "food_description" field in the JSON object.
     4 - Create a short 2-4 word title for the food in the image. Be accurate, but have some fun with it! Set this value to "food_title" field in the JSON object.
-    In the event that maybe you were incorrect, the user might add additional context, again response with the same JSON format only.
+    In the event that maybe you were incorrect, the user might add additional context, ask you if things need to updates, etc. You are still to ONLY respond in the above JSON format with any corrections you see fit.
   """.trimIndent(),
   @SerialName("max_tokens") val maxTokens: Int = 2048,
   val messages: List<Message>
