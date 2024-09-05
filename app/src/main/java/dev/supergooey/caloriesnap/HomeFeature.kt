@@ -17,9 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,7 +41,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
+import java.time.LocalDate
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -52,20 +55,34 @@ fun HomeScreen(
 
   Scaffold(
     floatingActionButton = {
-      LargeFloatingActionButton(
-        onClick = {
-          if (cameraPermissionState.status.isGranted) {
-            navigate(HomeFeature.Location.Camera)
-          } else {
-            cameraPermissionState.launchPermissionRequest()
-          }
-        }
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
       ) {
-        Icon(
-          modifier = Modifier.size(32.dp),
-          imageVector = Icons.Default.Person,
-          contentDescription = "Take a picture"
-        )
+        FloatingActionButton(
+          onClick = { navigate(HomeFeature.Location.History) }
+        ) {
+          Icon(
+            modifier = Modifier.size(32.dp),
+            imageVector = Icons.Rounded.DateRange,
+            contentDescription = "Take a picture"
+          )
+        }
+        FloatingActionButton(
+          onClick = {
+            if (cameraPermissionState.status.isGranted) {
+              navigate(HomeFeature.Location.Camera)
+            } else {
+              cameraPermissionState.launchPermissionRequest()
+            }
+          }
+        ) {
+          Icon(
+            modifier = Modifier.size(32.dp),
+            imageVector = Icons.Rounded.Person,
+            contentDescription = "Take a picture"
+          )
+        }
       }
     }
   ) { paddingValues ->
@@ -132,6 +149,7 @@ interface HomeFeature {
   sealed class Location(val route: String) {
     data object Camera : Location("camera")
     data class Log(val id: Int) : Location("log/$id")
+    data object History : Location("history")
   }
 }
 
@@ -139,9 +157,10 @@ class HomeViewModel(
   logStore: MealLogDatabase
 ) : ViewModel() {
   private val internalState = MutableStateFlow(HomeFeature.State(logs = emptyList()))
-  private val logsFlow = logStore.mealLogDao().getMealLogsByTime()
-  val state = combine(internalState.asStateFlow(), logsFlow) { state, logs ->
-    state.copy(logs = logs)
+  private val today = LocalDate.now()
+  private val logsFlow = logStore.mealLogDao().getMealLogsByDay(today).filterNotNull()
+  val state = combine(internalState.asStateFlow(), logsFlow) { state, logsByDay ->
+    state.copy(logs = logsByDay.logs)
   }.stateIn(
     scope = viewModelScope,
     started = SharingStarted.WhileSubscribed(),
@@ -155,4 +174,3 @@ class HomeViewModel(
     }
   }
 }
-

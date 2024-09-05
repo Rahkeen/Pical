@@ -43,8 +43,8 @@ fun App() {
   val context = LocalContext.current.applicationContext
   NavHost(
     modifier = Modifier
-        .fillMaxSize()
-        .background(color = MaterialTheme.colorScheme.background),
+      .fillMaxSize()
+      .background(color = MaterialTheme.colorScheme.background),
     navController = navController,
     startDestination = "home",
     enterTransition = { scaleIn(initialScale = 1.10f) + fadeIn() },
@@ -104,6 +104,15 @@ fun App() {
           }
         }
       )
+    }
+    composable("history") {
+      val model = viewModel<HistoryViewModel>(
+        factory = HistoryViewModel.Factory(
+          logDao = MealLogDatabase.getDatabase(context).mealLogDao()
+        )
+      )
+      val state by model.state.collectAsState()
+      HistoryScreen(state)
     }
   }
 }
