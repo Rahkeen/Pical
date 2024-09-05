@@ -73,6 +73,10 @@ interface MealLogDao {
   fun getMealLogsByDay(date: LocalDate): Flow<MealLogsByDay?>
 
   @Transaction
+  @Query("SELECT * FROM MealDay ORDER BY date")
+  fun getAllMealLogsByDay(): Flow<List<MealLogsByDay>>
+
+  @Transaction
   suspend fun addMealLog(mealLog: MealLog) {
     insertMealLog(mealLog)
     val mealLogsByDay = getMealLogsByDay(mealLog.logDate!!).first()
