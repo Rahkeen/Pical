@@ -16,6 +16,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutQuint
 import androidx.compose.animation.core.EaseInQuint
@@ -107,6 +108,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import dev.supergooey.caloriesnap.ui.theme.CoolGreen
+import dev.supergooey.caloriesnap.ui.theme.CoolOrange
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -222,13 +224,18 @@ fun CameraScreen(
                   animationSpec = spring(),
                   label = ""
                 )
+                val buttonColor by animateColorAsState(
+                  targetValue = if (isPressed) CoolOrange else CoolRed,
+                  animationSpec = spring(),
+                  label = ""
+                )
                 Box(
                   modifier = Modifier
                     .scale(pressedScale)
                     .size(80.dp)
                     .clip(MorphPolygonShape(morph, morphProgress))
                     .clickable(interactionSource = interactionSource, indication = null) { takePicture() }
-                    .background(color = CoolRed)
+                    .background(color = buttonColor)
                     .align(Alignment.BottomCenter),
                 )
               }
