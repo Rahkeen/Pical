@@ -17,13 +17,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseIn
-import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseInOutQuint
 import androidx.compose.animation.core.EaseInQuint
 import androidx.compose.animation.core.EaseOutQuint
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
@@ -33,6 +31,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +50,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -74,8 +73,13 @@ import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -85,10 +89,18 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.graphics.shapes.CornerRounding
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.RoundedPolygon
+import androidx.graphics.shapes.circle
+import androidx.graphics.shapes.star
+import androidx.graphics.shapes.toPath
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -185,11 +197,37 @@ fun CameraScreen(
                   .windowInsetsPadding(WindowInsets.navigationBars)
                   .padding(16.dp)
               ) {
+                val shape1 = remember {
+                  RoundedPolygon.circle(
+                    numVertices = 12
+                  )
+                }
+                val shape2 = remember {
+                  RoundedPolygon.star(
+                    numVerticesPerRadius = 12,
+                    innerRadius = 0.8f,
+                    rounding = CornerRounding(radius = 0.5f)
+                  )
+                }
+                val morph = remember { Morph(shape1, shape2) }
+                val interactionSource = remember { MutableInteractionSource() }
+                val isPressed by interactionSource.collectIsPressedAsState()
+                val morphProgress by animateFloatAsState(
+                  targetValue = if (isPressed) 1f else 0f,
+                  animationSpec = spring(),
+                  label = ""
+                )
+                val pressedScale by animateFloatAsState(
+                  targetValue = if (isPressed) 1.2f else 1f,
+                  animationSpec = spring(),
+                  label = ""
+                )
                 Box(
                   modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .clickable { takePicture() }
+                    .scale(pressedScale)
+                    .size(80.dp)
+                    .clip(MorphPolygonShape(morph, morphProgress))
+                    .clickable(interactionSource = interactionSource, indication = null) { takePicture() }
                     .background(color = CoolRed)
                     .align(Alignment.BottomCenter),
                 )
@@ -288,10 +326,12 @@ fun CameraScreen(
                     "glassRadius",
                     radius.value,
                   )
-                  renderEffect = RenderEffect.createRuntimeShaderEffect(
-                    shader,
-                    "image"
-                  ).asComposeRenderEffect()
+                  renderEffect = RenderEffect
+                    .createRuntimeShaderEffect(
+                      shader,
+                      "image"
+                    )
+                    .asComposeRenderEffect()
                 }
                 .size(300.dp)
                 .clip(RoundedCornerShape(cornerRadius)),
@@ -614,5 +654,24 @@ fun MealResponse.toMealLog(
     time = timestamp,
     logDate = date
   )
+}
+
+class MorphPolygonShape(
+  private val morph: Morph,
+  private val percentage: Float
+): Shape {
+
+  private val matrix = androidx.compose.ui.graphics.Matrix()
+  override fun createOutline(
+    size: Size,
+    layoutDirection: LayoutDirection,
+    density: Density
+  ): Outline {
+    matrix.scale(size.width /2f, size.height / 2f)
+    matrix.translate(1f, 1f)
+    val path = morph.toPath(percentage).asComposePath()
+    path.transform(matrix)
+    return Outline.Generic(path)
+  }
 }
 

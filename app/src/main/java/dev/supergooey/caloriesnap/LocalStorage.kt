@@ -118,7 +118,7 @@ abstract class MealLogDatabase : RoomDatabase() {
             MealLogDatabase::class.java,
             "meal_log_database"
           )
-          .fallbackToDestructiveMigrationFrom(3, 4)
+          .fallbackToDestructiveMigration()
           .build()
         INSTANCE = instance
         instance
