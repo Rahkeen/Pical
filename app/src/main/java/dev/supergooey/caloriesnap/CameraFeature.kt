@@ -2,6 +2,8 @@ package dev.supergooey.caloriesnap
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.RenderEffect
+import android.graphics.RuntimeShader
 import android.util.Base64
 import android.util.Log
 import android.view.ViewGroup
@@ -15,8 +17,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseIn
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseInOutQuint
+import androidx.compose.animation.core.EaseInQuint
+import androidx.compose.animation.core.EaseOutQuint
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.spring
@@ -62,12 +67,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -208,7 +217,18 @@ fun CameraScreen(
 
         CameraFeatureStep.Analysis -> {
           val rotation = remember { Animatable(0f) }
+          val radius = remember { Animatable(0f) }
+          val shader = remember { RuntimeShader(magnifyShader) }
           val listState = rememberLazyListState()
+
+          var time by remember { mutableFloatStateOf(0f) }
+          LaunchedEffect(Unit) {
+            do {
+              withFrameMillis {
+                time += 0.01f
+              }
+            } while (true)
+          }
 
           LaunchedEffect(state.messages) {
             if (listState.layoutInfo.totalItemsCount > 0) {
@@ -223,19 +243,9 @@ fun CameraScreen(
 
           LaunchedEffect(state.loading) {
             if (state.loading) {
-              delay(animationDuration.toLong())
-              while (true) {
-                rotation.animateTo(
-                  2f,
-                  animationSpec = tween(durationMillis = 200, easing = EaseInOut)
-                )
-                rotation.animateTo(
-                  -2f,
-                  animationSpec = tween(durationMillis = 200, easing = EaseInOut)
-                )
-              }
+              radius.animateTo(0.3f, animationSpec = tween(durationMillis = 500, easing = EaseOutQuint))
             } else {
-              rotation.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
+              radius.animateTo(0.0f, tween(durationMillis = 500, easing = EaseInQuint))
             }
           }
 
@@ -258,7 +268,30 @@ fun CameraScreen(
                   },
                 )
                 .graphicsLayer {
+                  clip = true
                   rotationZ = rotation.value
+                  shader.setFloatUniform(
+                    "time",
+                    time
+                  )
+                  shader.setFloatUniform(
+                    "size",
+                    size.width,
+                    size.height
+                  )
+                  shader.setFloatUniform(
+                    "glass",
+                    0.5f,
+                    0.3f
+                  )
+                  shader.setFloatUniform(
+                    "glassRadius",
+                    radius.value,
+                  )
+                  renderEffect = RenderEffect.createRuntimeShaderEffect(
+                    shader,
+                    "image"
+                  ).asComposeRenderEffect()
                 }
                 .size(300.dp)
                 .clip(RoundedCornerShape(cornerRadius)),
