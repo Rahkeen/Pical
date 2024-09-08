@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,16 +53,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,7 +75,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
@@ -88,8 +83,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -234,7 +227,10 @@ fun CameraScreen(
                     .scale(pressedScale)
                     .size(80.dp)
                     .clip(MorphPolygonShape(morph, morphProgress))
-                    .clickable(interactionSource = interactionSource, indication = null) { takePicture() }
+                    .clickable(
+                      interactionSource = interactionSource,
+                      indication = null
+                    ) { takePicture() }
                     .background(color = buttonColor)
                     .align(Alignment.BottomCenter),
                 )
@@ -381,7 +377,10 @@ fun CameraScreen(
               }
             }
             AnimatedVisibility(state.mealResponse?.valid == true) {
-              Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+              Column(
+                modifier = Modifier.imePadding(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+              ) {
                 Text(
                   text = "Add some context",
                   style = TextStyle(
@@ -390,42 +389,12 @@ fun CameraScreen(
                     fontWeight = FontWeight.Medium
                   )
                 )
-                BasicTextField(
+                Composer(
+                  modifier = Modifier.fillMaxWidth(),
                   value = state.contextMessage,
                   onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
-                  textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
-                  keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Go
-                  ),
-                  keyboardActions = KeyboardActions(onGo = { actions(CameraFeature.Action.SendContextMessage) }),
-                  cursorBrush = SolidColor(value = MaterialTheme.colorScheme.onPrimaryContainer)
-                ) { innerTextField ->
-                  Row(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .wrapContentHeight()
-                      .clip(
-                        RoundedCornerShape(8.dp)
-                      )
-                      .background(color = MaterialTheme.colorScheme.primaryContainer)
-                      .padding(vertical = 16.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                  ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                      innerTextField()
-                    }
-                    Icon(
-                      modifier = Modifier
-                        .size(24.dp)
-                        .clickable { actions(CameraFeature.Action.SendContextMessage) },
-                      imageVector = Icons.AutoMirrored.Rounded.Send,
-                      tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                      contentDescription = "Send Context Message"
-                    )
-                  }
-                }
+                  onSend =  { actions(CameraFeature.Action.SendContextMessage) }
+                )
               }
             }
             Row(
@@ -558,7 +527,7 @@ class CameraViewModel(
             }
           } else {
             Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
-            internalState.update { current -> current.copy( loading = false, ) }
+            internalState.update { current -> current.copy( loading = false) }
           }
         }
       }
@@ -638,13 +607,6 @@ class CameraViewModel(
       return CameraViewModel(store, db) as T
     }
   }
-}
-
-fun MessagesResponse.toMessage(): Message {
-  return Message(
-    role = role,
-    content = content
-  )
 }
 
 fun MealResponse.toMealLog(
