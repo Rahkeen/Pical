@@ -23,8 +23,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -188,78 +190,79 @@ fun MessageComposerDemo() {
         targetState = isSending,
         label = "isSending"
       ) { state ->
-        Column(
-          modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-        ) {
+        Scaffold(
+          modifier = Modifier.fillMaxSize(),
+          bottomBar = {
+            ComposerContainer(
+              sharedTransitionScope = this@SharedTransitionLayout,
+              animatedVisibilityScope = this@AnimatedContent,
+              messageId = id,
+              value = contextMessage,
+              onValueChanged = { contextMessage = it},
+              onSend = {
+                isSending = true
+                messages.add(
+                  index = 0,
+                  Message(
+                    id = id,
+                    role = "user",
+                    content = listOf(
+                      MessageContent.Text(
+                        text = contextMessage
+                      )
+                    )
+                  )
+                )
+              }
+            )
+          }
+        ) { paddingValues ->
           val listState = rememberLazyListState()
 
           LaunchedEffect(messages.size) {
             isSending = false
             id = UUID.randomUUID().toString()
             contextMessage = ""
-            if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(listState.layoutInfo.totalItemsCount-1)
-            }
+            listState.scrollToItem(0)
           }
-          LazyColumn(
-            modifier = Modifier
-              .fillMaxWidth()
-              .weight(1f),
-            state = listState,
-          ) {
-            items(items = messages) { message ->
-              val isUser = message.role == "user"
-              val alignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
-              val body = (message.content[0] as MessageContent.Text).text
-              Box(modifier = Modifier.fillMaxWidth(), contentAlignment = alignment) {
-                // Message Bubble
-                Surface(
-                  modifier = Modifier
-                    .widthIn(max = 280.dp)
-                    .sharedBounds(
-                      sharedContentState = rememberSharedContentState(message.id),
-                      animatedVisibilityScope = this@AnimatedContent,
-                      boundsTransform = { _, _ -> spring(stiffness = Spring.StiffnessLow) },
-                      resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
-                      zIndexInOverlay = 1f
-                    ),
-                  color = messageBubbleColor(isUser),
-                  shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
+          Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+              LazyColumn(
+                state = listState,
+                reverseLayout = true
+              ) {
+                items(items = messages) { message ->
+                  val isUser = message.role == "user"
+                  val alignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
+                  val body = (message.content[0] as MessageContent.Text).text
+                  Box(modifier = Modifier.fillParentMaxWidth(), contentAlignment = alignment) {
+                    // Message Bubble
+                    Surface(
                       modifier = Modifier
-                        .padding(vertical = 8.dp, horizontal = 16.dp)
-                        .skipToLookaheadSize(),
-                      text = body,
-                      color = messageTextColor(isUser)
-                    )
+                        .widthIn(max = 280.dp)
+                        .sharedBounds(
+                          sharedContentState = rememberSharedContentState(message.id),
+                          animatedVisibilityScope = this@AnimatedContent,
+                          boundsTransform = { _, _ -> spring(stiffness = Spring.StiffnessLow) },
+                          resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                          zIndexInOverlay = 1f
+                        ),
+                      color = messageBubbleColor(isUser),
+                      shape = CircleShape
+                    ) {
+                      Text(
+                        modifier = Modifier
+                          .padding(vertical = 8.dp, horizontal = 16.dp)
+                          .skipToLookaheadSize(),
+                        text = body,
+                        color = messageTextColor(isUser)
+                      )
+                    }
+                  }
                 }
               }
             }
           }
-          ComposerContainer(
-            sharedTransitionScope = this@SharedTransitionLayout,
-            animatedVisibilityScope = this@AnimatedContent,
-            messageId = id,
-            value = contextMessage,
-            onValueChanged = { contextMessage = it},
-            onSend = {
-              isSending = true
-              messages.add(
-                Message(
-                  id = id,
-                  role = "user",
-                  content = listOf(
-                    MessageContent.Text(
-                      text = contextMessage
-                    )
-                  )
-                )
-              )
-            }
-          )
         }
       }
     }
@@ -277,23 +280,21 @@ fun ComposerContainer(
   onSend: () -> Unit,
 ) {
   Surface(
-    modifier = modifier
-      .windowInsetsPadding(WindowInsets.navigationBars)
-      .imePadding()
-      .fillMaxWidth()
-      .height(100.dp),
+    modifier = modifier.fillMaxWidth(),
     color = MaterialTheme.colorScheme.surfaceContainer,
     shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
   ) {
     Row(
-      modifier = Modifier.height(88.dp),
+      modifier = Modifier
+        .windowInsetsPadding(WindowInsets.navigationBars)
+        .imePadding()
+        .height(88.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(modifier = Modifier.padding(horizontal = 16.dp)) {
         with(sharedTransitionScope) {
           Composer(
             modifier = Modifier.sharedBounds(
-              resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
               placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
               sharedContentState = rememberSharedContentState(messageId),
               animatedVisibilityScope = animatedVisibilityScope
