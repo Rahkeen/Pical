@@ -1,5 +1,6 @@
 package dev.supergooey.caloriesnap
 
+import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.RenderEffect
@@ -8,6 +9,7 @@ import android.util.Base64
 import android.util.Log
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.WindowManager
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
@@ -19,8 +21,8 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutQuint
-import androidx.compose.animation.core.EaseInQuint
 import androidx.compose.animation.core.EaseOutQuint
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -64,6 +66,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
@@ -73,22 +76,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
@@ -100,6 +107,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolGreen
 import dev.supergooey.caloriesnap.ui.theme.CoolOrange
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
@@ -112,12 +120,66 @@ import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 
-fun Bitmap.rotate(degrees: Int): Bitmap {
-  val matrix = Matrix().apply {
-    postRotate(degrees.toFloat())
-  }
 
-  return Bitmap.createBitmap(this, 0, 0, width, height, matrix, false)
+@Preview
+@Composable
+private fun CameraScreenAnalyzePreview() {
+  CalorieSnapTheme {
+    val activity = LocalContext.current as Activity
+    activity.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+    WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+
+    val bitmap = ImageBitmap.imageResource(R.drawable.bibimbap).asAndroidBitmap()
+    var state by remember {
+      mutableStateOf(
+        CameraFeature.State(
+          capturedPhoto = bitmap,
+          mealResponse = MealResponse(
+            foodTitle = "Bibimbap",
+            foodDescription = "This is some bibibibibibibibibimbap bap bap bap hahahah hahhaha klajsdhfkajsdh",
+            totalCalories = 1000,
+            valid = true
+          ),
+          messages = listOf(
+            Message(
+              role = "system",
+              content = listOf(
+                MessageContent.Text(
+                  text = "This is some bibibibibibibibibimbap bap bap bap hahahah hahhaha klajsdhfkajsdh"
+                )
+              )
+            )
+          ),
+          step = CameraFeatureStep.Analysis
+        )
+      )
+    }
+    CameraScreen(
+      state = state,
+      actions = { action ->
+        when(action) {
+          is CameraFeature.Action.AnalyzePhoto -> { }
+          CameraFeature.Action.SendContextMessage -> {
+            state = state.copy(
+              contextMessage = "",
+              messages = state.messages + Message(
+                role = "user",
+                content = listOf(MessageContent.Text(state.contextMessage))
+              )
+            )
+          }
+          is CameraFeature.Action.UpdateContextMessage -> {
+            state = state.copy(
+              contextMessage = action.message
+            )
+          }
+
+          CameraFeature.Action.LogMeal -> { }
+          is CameraFeature.Action.TakePhoto -> { }
+        }
+      }
+    )
+  }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -273,7 +335,7 @@ fun CameraScreen(
 
           LaunchedEffect(state.messages) {
             if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.animateScrollToItem(listState.layoutInfo.totalItemsCount-1)
+              listState.animateScrollToItem(listState.layoutInfo.totalItemsCount - 1)
             }
           }
 
@@ -284,9 +346,12 @@ fun CameraScreen(
 
           LaunchedEffect(state.loading) {
             if (state.loading) {
-              radius.animateTo(0.3f, animationSpec = tween(durationMillis = 500, easing = EaseOutQuint))
+              radius.animateTo(
+                0.3f,
+                animationSpec = tween(durationMillis = 500, easing = EaseOutQuint)
+              )
             } else {
-              radius.animateTo(0.0f, tween(durationMillis = 500, easing = EaseInQuint))
+              radius.animateTo(0.0f, tween(durationMillis = 200, easing = LinearEasing))
             }
           }
 
@@ -299,49 +364,91 @@ fun CameraScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
-            Image(
-              modifier = Modifier
-                .sharedElement(
-                  state = rememberSharedContentState("image"),
-                  animatedVisibilityScope = this@AnimatedContent,
-                  boundsTransform = { _, _ ->
-                    tween(durationMillis = animationDuration, easing = easing)
-                  },
-                )
-                .graphicsLayer {
-                  clip = true
-                  rotationZ = rotation.value
-                  shader.setFloatUniform(
-                    "time",
-                    time
+            Box(
+              modifier = Modifier.size(300.dp),
+              contentAlignment = Alignment.BottomCenter
+            ) {
+              Image(
+                modifier = Modifier
+                  .sharedElement(
+                    state = rememberSharedContentState("image"),
+                    animatedVisibilityScope = this@AnimatedContent,
+                    boundsTransform = { _, _ ->
+                      tween(durationMillis = animationDuration, easing = easing)
+                    },
                   )
-                  shader.setFloatUniform(
-                    "size",
-                    size.width,
-                    size.height
-                  )
-                  shader.setFloatUniform(
-                    "glass",
-                    0.5f,
-                    0.3f
-                  )
-                  shader.setFloatUniform(
-                    "glassRadius",
-                    radius.value,
-                  )
-                  renderEffect = RenderEffect
-                    .createRuntimeShaderEffect(
-                      shader,
-                      "image"
+                  .graphicsLayer {
+                    clip = true
+                    rotationZ = rotation.value
+                    shader.setFloatUniform(
+                      "time",
+                      time
                     )
-                    .asComposeRenderEffect()
+                    shader.setFloatUniform(
+                      "size",
+                      size.width,
+                      size.height
+                    )
+                    shader.setFloatUniform(
+                      "glass",
+                      0.5f,
+                      0.3f
+                    )
+                    shader.setFloatUniform(
+                      "glassRadius",
+                      radius.value,
+                    )
+                    renderEffect = RenderEffect
+                      .createRuntimeShaderEffect(
+                        shader,
+                        "image"
+                      )
+                      .asComposeRenderEffect()
+                  }
+                  .size(300.dp)
+                  .clip(RoundedCornerShape(cornerRadius)),
+                bitmap = state.capturedPhoto!!.asImageBitmap(),
+                contentScale = ContentScale.Crop,
+                contentDescription = "Photo"
+              )
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                AnimatedVisibility(
+                  state.mealResponse != null
+                ) {
+                  Box(
+                    modifier = Modifier
+                      .wrapContentSize()
+                      .clip(RoundedCornerShape(8.dp))
+                      .background(color = Color.White)
+                      .padding(8.dp)
+                  ) {
+                    Text("${state.mealResponse!!.totalCalories} cal")
+                  }
                 }
-                .size(300.dp)
-                .clip(RoundedCornerShape(cornerRadius)),
-              bitmap = state.capturedPhoto!!.asImageBitmap(),
-              contentScale = ContentScale.Crop,
-              contentDescription = "Photo"
-            )
+                AnimatedVisibility(
+                  state.mealResponse != null
+                ) {
+                  Button(
+                    onClick = { actions(CameraFeature.Action.LogMeal) },
+                    colors = ButtonDefaults.buttonColors(containerColor = CoolGreen)
+                  ) {
+                    Icon(
+                      modifier = Modifier.size(16.dp),
+                      imageVector = Icons.Rounded.Check,
+                      tint = Color.White,
+                      contentDescription = "Save Meal"
+                    )
+                  }
+                }
+              }
+            }
+
             LazyColumn(
               modifier = Modifier
                 .fillMaxWidth()
@@ -358,6 +465,7 @@ fun CameraScreen(
                   val content = message.content[0] as MessageContent.Text
                   Box(
                     modifier = Modifier
+                      .animateItem()
                       .fillMaxWidth()
                       .wrapContentHeight(),
                     contentAlignment = alignment
@@ -381,52 +489,12 @@ fun CameraScreen(
                 modifier = Modifier.imePadding(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
               ) {
-                Text(
-                  text = "Add some context",
-                  style = TextStyle(
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                  )
-                )
                 Composer(
                   modifier = Modifier.fillMaxWidth(),
                   value = state.contextMessage,
                   onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
-                  onSend =  { actions(CameraFeature.Action.SendContextMessage) }
+                  onSend = { actions(CameraFeature.Action.SendContextMessage) }
                 )
-              }
-            }
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              AnimatedVisibility(state.mealResponse?.valid == true) {
-                Box(
-                  modifier = Modifier
-                    .wrapContentSize()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(color = Color.White)
-                    .padding(8.dp)
-                ) {
-                  Text(
-                    text = "Calories: ${state.mealResponse?.totalCalories}",
-                    color = Color.Black
-                  )
-                }
-              }
-              AnimatedVisibility(state.mealResponse?.valid == true) {
-                Button(
-                  onClick = { actions(CameraFeature.Action.LogMeal) },
-                  colors = ButtonDefaults.buttonColors(containerColor = CoolGreen)
-                ) {
-                  Icon(
-                    modifier = Modifier.size(24.dp),
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = "Save"
-                  )
-                }
               }
             }
           }
@@ -434,6 +502,14 @@ fun CameraScreen(
       }
     }
   }
+}
+
+fun Bitmap.rotate(degrees: Int): Bitmap {
+  val matrix = Matrix().apply {
+    postRotate(degrees.toFloat())
+  }
+
+  return Bitmap.createBitmap(this, 0, 0, width, height, matrix, false)
 }
 
 enum class CameraFeatureStep {
@@ -456,8 +532,8 @@ interface CameraFeature {
     data class TakePhoto(val bitmap: Bitmap) : Action
     data class AnalyzePhoto(val bitmap: Bitmap) : Action
     data object LogMeal : Action
-    data class UpdateContextMessage(val message: String): Action
-    data object SendContextMessage: Action
+    data class UpdateContextMessage(val message: String) : Action
+    data object SendContextMessage : Action
   }
 }
 
@@ -628,7 +704,7 @@ fun MealResponse.toMealLog(
 class MorphPolygonShape(
   private val morph: Morph,
   private val percentage: Float
-): Shape {
+) : Shape {
 
   private val matrix = androidx.compose.ui.graphics.Matrix()
   override fun createOutline(
@@ -636,7 +712,7 @@ class MorphPolygonShape(
     layoutDirection: LayoutDirection,
     density: Density
   ): Outline {
-    matrix.scale(size.width /2f, size.height / 2f)
+    matrix.scale(size.width / 2f, size.height / 2f)
     matrix.translate(1f, 1f)
     val path = morph.toPath(percentage).asComposePath()
     path.transform(matrix)
