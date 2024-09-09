@@ -2,6 +2,7 @@ package dev.supergooey.caloriesnap
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -11,6 +12,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
+import java.util.UUID
 
 private const val BASE_URL = "https://api.anthropic.com/v1/"
 private const val API_KEY = BuildConfig.API_KEY
@@ -51,6 +53,7 @@ data class Usage(
 
 @Serializable
 data class Message(
+  @Transient val id: String = UUID.randomUUID().toString(),
   val role: String,
   val content: List<MessageContent>,
 )

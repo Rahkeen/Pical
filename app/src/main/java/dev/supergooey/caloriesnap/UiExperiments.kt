@@ -2,18 +2,35 @@ package dev.supergooey.caloriesnap
 
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Composer
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
@@ -32,10 +49,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolMagenta
 import dev.supergooey.caloriesnap.ui.theme.CoolPink
 import dev.supergooey.caloriesnap.ui.theme.CoolPurple
 import org.intellij.lang.annotations.Language
+import java.util.UUID
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -189,10 +208,12 @@ private fun MagnifyTest() {
             "glassRadius",
             0.3f,
           )
-          renderEffect = RenderEffect.createRuntimeShaderEffect(
-            shader,
-            "image"
-          ).asComposeRenderEffect()
+          renderEffect = RenderEffect
+            .createRuntimeShaderEffect(
+              shader,
+              "image"
+            )
+            .asComposeRenderEffect()
         }
         .size(300.dp)
         .clip(RoundedCornerShape(16.dp)),
@@ -202,3 +223,4 @@ private fun MagnifyTest() {
     )
   }
 }
+
