@@ -22,6 +22,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutQuint
 import androidx.compose.animation.core.EaseOutQuint
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -41,6 +42,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -134,7 +136,15 @@ fun CameraScreenAnalyzePreview() {
                   text = "This is some bibibibibibibibibimbap bap bap bap hahahah hahhaha klajsdhfkajsdh"
                 )
               )
-            )
+            ),
+            Message(
+              role = "user",
+              content = listOf(
+                MessageContent.Text(
+                  text = "I think you might be a bit broken there buddy."
+                )
+              )
+            ),
           ),
           step = CameraFeatureStep.Analysis
         )
@@ -343,7 +353,6 @@ fun AnalysisStep(
   cornerRadius: Dp,
   actions: (CameraFeature.Action) -> Unit
 ) {
-
   val shader = remember { RuntimeShader(magnifyShader) }
   val rotation = remember { Animatable(0f) }
   val radius = remember { Animatable(0f) }
@@ -361,7 +370,7 @@ fun AnalysisStep(
         animationSpec = tween(durationMillis = 500, easing = EaseOutQuint)
       )
     } else {
-      radius.animateTo(0f, tween(durationMillis = 100, easing = EaseOutQuint))
+      radius.animateTo(targetValue = 0f, animationSpec = spring(stiffness = Spring.StiffnessMedium))
     }
   }
 
@@ -424,7 +433,9 @@ fun AnalysisStep(
         }
         item {
           Box(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+            modifier = Modifier
+              .fillMaxWidth()
+              .wrapContentHeight(),
             contentAlignment = Alignment.Center
           ) {
             with(sharedTransitionScope) {
@@ -465,7 +476,7 @@ fun AnalysisStep(
                       )
                       .asComposeRenderEffect()
                   }
-                  .size(200.dp)
+                  .size(300.dp)
                   .clip(RoundedCornerShape(cornerRadius)),
                 bitmap = state.capturedPhoto!!.asImageBitmap(),
                 contentScale = ContentScale.Crop,
@@ -477,17 +488,12 @@ fun AnalysisStep(
       }
     }
     AnimatedVisibility(state.mealResponse?.valid == true) {
-      Column(
-        modifier = Modifier.imePadding(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-      ) {
-        Composer(
-          modifier = Modifier.fillMaxWidth(),
-          value = state.contextMessage,
-          onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
-          onSend = { actions(CameraFeature.Action.SendContextMessage) }
-        )
-      }
+      Composer(
+        modifier = Modifier.imePadding().fillMaxWidth(),
+        value = state.contextMessage,
+        onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
+        onSend = { actions(CameraFeature.Action.SendContextMessage) }
+      )
     }
   }
 }

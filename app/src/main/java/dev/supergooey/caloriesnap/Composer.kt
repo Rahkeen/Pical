@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
@@ -74,22 +75,17 @@ fun Composer(
           modifier = Modifier
             .fillMaxWidth()
             .weight(1f),
-          hint = "Type a message",
+          hint = "Add some context",
           value = value,
           onValueChange = onValueChange
         )
       }
 
-      // Someone is going to see this and think "Aw gawd this is awful"
-      // and if that person is you, I'm sorry.
-      // Don't do this at home, kids.
-      CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-        IconButton(onClick = { if (value.isNotBlank()) onSend() }) {
-          Icon(
-            imageVector = Icons.AutoMirrored.Rounded.Send,
-            contentDescription = "Send"
-          )
-        }
+      IconButton(onClick = { if (value.isNotBlank()) onSend() }) {
+        Icon(
+          imageVector = Icons.AutoMirrored.Rounded.Send,
+          contentDescription = "Send"
+        )
       }
     }
   }
@@ -142,7 +138,7 @@ private fun WithTextStyle(
 @Preview
 @Composable
 private fun ComposerPreview() {
-  var value by remember { mutableStateOf("Hey hey") }
+  var value by remember { mutableStateOf("Hello there") }
 
   CalorieSnapTheme {
     Composer(
