@@ -62,7 +62,7 @@ fun Composer(
   // So no, our Composer is not going to be a ball.
   Surface(
     shape = CircleShape,
-    color = MaterialTheme.colorScheme.surfaceDim,
+    color = MaterialTheme.colorScheme.surfaceContainer,
     modifier = modifier.height(56.dp)
   ) {
     Row(

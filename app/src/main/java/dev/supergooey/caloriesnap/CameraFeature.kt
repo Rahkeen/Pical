@@ -41,17 +41,18 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imeNestedScroll
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -59,7 +60,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Done
@@ -228,113 +228,115 @@ fun CameraScreen(
     )
   }
 
-  SharedTransitionLayout {
-    transition.AnimatedContent(
-      transitionSpec = { fadeIn().togetherWith(fadeOut()) },
-    ) { step ->
-      when (step) {
-        CameraFeatureStep.Camera -> {
-          Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .background(color = Color.Black),
-            contentAlignment = Alignment.Center
-          ) {
-            if (state.capturedPhoto == null) {
-              AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                  PreviewView(ctx).apply {
-                    layoutParams =
-                      ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                    scaleType = PreviewView.ScaleType.FIT_CENTER
+  CalorieSnapTheme(darkTheme = true) {
+    SharedTransitionLayout {
+      transition.AnimatedContent(
+        transitionSpec = { fadeIn().togetherWith(fadeOut()) },
+      ) { step ->
+        when (step) {
+          CameraFeatureStep.Camera -> {
+            Box(
+              modifier = Modifier
+                .fillMaxSize()
+                .background(color = Color.Black),
+              contentAlignment = Alignment.Center
+            ) {
+              if (state.capturedPhoto == null) {
+                AndroidView(
+                  modifier = Modifier.fillMaxSize(),
+                  factory = { ctx ->
+                    PreviewView(ctx).apply {
+                      layoutParams =
+                        ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                      setBackgroundColor(android.graphics.Color.BLACK)
+                      scaleType = PreviewView.ScaleType.FIT_CENTER
+                    }
+                  },
+                  update = { view ->
+                    view.controller = cameraController
+                    cameraController.bindToLifecycle(lifecycleOwner)
                   }
-                },
-                update = { view ->
-                  view.controller = cameraController
-                  cameraController.bindToLifecycle(lifecycleOwner)
-                }
-              )
-              Box(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .windowInsetsPadding(WindowInsets.navigationBars)
-                  .padding(16.dp)
-              ) {
-                val shape1 = remember {
-                  RoundedPolygon.circle(
-                    numVertices = 12
-                  )
-                }
-                val shape2 = remember {
-                  RoundedPolygon.star(
-                    numVerticesPerRadius = 12,
-                    innerRadius = 0.8f,
-                    rounding = CornerRounding(radius = 0.5f)
-                  )
-                }
-                val morph = remember { Morph(shape1, shape2) }
-                val interactionSource = remember { MutableInteractionSource() }
-                val isPressed by interactionSource.collectIsPressedAsState()
-                val morphProgress by animateFloatAsState(
-                  targetValue = if (isPressed) 1f else 0f,
-                  animationSpec = spring(),
-                  label = ""
-                )
-                val pressedScale by animateFloatAsState(
-                  targetValue = if (isPressed) 1.2f else 1f,
-                  animationSpec = spring(),
-                  label = ""
-                )
-                val buttonColor by animateColorAsState(
-                  targetValue = if (isPressed) CoolOrange else CoolRed,
-                  animationSpec = spring(),
-                  label = ""
                 )
                 Box(
                   modifier = Modifier
-                    .scale(pressedScale)
-                    .size(80.dp)
-                    .clip(MorphPolygonShape(morph, morphProgress))
-                    .clickable(
-                      interactionSource = interactionSource,
-                      indication = null
-                    ) { takePicture() }
-                    .background(color = buttonColor)
-                    .align(Alignment.BottomCenter),
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(16.dp)
+                ) {
+                  val shape1 = remember {
+                    RoundedPolygon.circle(
+                      numVertices = 12
+                    )
+                  }
+                  val shape2 = remember {
+                    RoundedPolygon.star(
+                      numVerticesPerRadius = 12,
+                      innerRadius = 0.8f,
+                      rounding = CornerRounding(radius = 0.5f)
+                    )
+                  }
+                  val morph = remember { Morph(shape1, shape2) }
+                  val interactionSource = remember { MutableInteractionSource() }
+                  val isPressed by interactionSource.collectIsPressedAsState()
+                  val morphProgress by animateFloatAsState(
+                    targetValue = if (isPressed) 1f else 0f,
+                    animationSpec = spring(),
+                    label = ""
+                  )
+                  val pressedScale by animateFloatAsState(
+                    targetValue = if (isPressed) 1.2f else 1f,
+                    animationSpec = spring(),
+                    label = ""
+                  )
+                  val buttonColor by animateColorAsState(
+                    targetValue = if (isPressed) CoolOrange else CoolRed,
+                    animationSpec = spring(),
+                    label = ""
+                  )
+                  Box(
+                    modifier = Modifier
+                      .scale(pressedScale)
+                      .size(80.dp)
+                      .clip(MorphPolygonShape(morph, morphProgress))
+                      .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                      ) { takePicture() }
+                      .background(color = buttonColor)
+                      .align(Alignment.BottomCenter),
+                  )
+                }
+              } else {
+                Image(
+                  modifier = Modifier
+                    .sharedElement(
+                      state = rememberSharedContentState(key = "image"),
+                      boundsTransform = { _, _ ->
+                        tween(
+                          durationMillis = animationDuration,
+                          easing = easing
+                        )
+                      },
+                      animatedVisibilityScope = this@AnimatedContent
+                    )
+                    .clip(RoundedCornerShape(cornerRadius)),
+                  bitmap = state.capturedPhoto.asImageBitmap(),
+                  contentDescription = "Photo"
                 )
               }
-            } else {
-              Image(
-                modifier = Modifier
-                  .sharedElement(
-                    state = rememberSharedContentState(key = "image"),
-                    boundsTransform = { _, _ ->
-                      tween(
-                        durationMillis = animationDuration,
-                        easing = easing
-                      )
-                    },
-                    animatedVisibilityScope = this@AnimatedContent
-                  )
-                  .clip(RoundedCornerShape(cornerRadius)),
-                bitmap = state.capturedPhoto.asImageBitmap(),
-                contentDescription = "Photo"
-              )
             }
           }
-        }
 
-        CameraFeatureStep.Analysis -> {
-          AnalysisStep(
-            state = state,
-            sharedTransitionScope = this@SharedTransitionLayout,
-            animatedVisibilityScope = this@AnimatedContent,
-            animationDuration = animationDuration,
-            cornerRadius = cornerRadius,
-            actions = actions
-          )
+          CameraFeatureStep.Analysis -> {
+            AnalysisStep(
+              state = state,
+              sharedTransitionScope = this@SharedTransitionLayout,
+              animatedVisibilityScope = this@AnimatedContent,
+              animationDuration = animationDuration,
+              cornerRadius = cornerRadius,
+              actions = actions
+            )
+          }
         }
       }
     }
@@ -390,11 +392,27 @@ fun AnalysisStep(
     listState.animateScrollToItem(0)
   }
 
+  val caloriePosition = remember { Animatable(200f) }
+  val submitPosition = remember { Animatable(200f) }
+  LaunchedEffect(state.mealResponse) {
+    val response = state.mealResponse
+    if (response != null) {
+      launch {
+        caloriePosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+      }
+      launch {
+        delay(50)
+        submitPosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+      }
+    } else {
+      caloriePosition.animateTo(200f, spring())
+    }
+  }
   Column(
     modifier = Modifier
       .fillMaxSize()
       .background(color = Color.Black)
-      .windowInsetsPadding(WindowInsets.statusBars)
+      .windowInsetsPadding(WindowInsets.systemBars)
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
@@ -406,7 +424,7 @@ fun AnalysisStep(
           .weight(1f),
         state = listState,
         reverseLayout = true,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
         itemsIndexed(
           items = state.messages.reversed(),
@@ -415,9 +433,8 @@ fun AnalysisStep(
             val content = (message.content[0] as MessageContent.Text).text
             val isUser = message.role == "user"
             val alignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
-            val color = if (isUser) MaterialTheme.colorScheme.primaryContainer else Color.White
-            val textColor =
-              if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else Color.Black
+            val color = if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer
+            val textColor = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
 
             Box(
               modifier = Modifier
@@ -432,10 +449,10 @@ fun AnalysisStep(
                 color = color,
                 contentColor = textColor,
                 shape = RoundedCornerShape(
-                  topStart = 16.dp,
-                  topEnd = 16.dp,
-                  bottomStart = if (isUser) 16.dp else 4.dp,
-                  bottomEnd = if (isUser) 4.dp else 16.dp,
+                  bottomStart = 16.dp,
+                  bottomEnd = 16.dp,
+                  topStart = if (isUser) 16.dp else 4.dp,
+                  topEnd = if (isUser) 4.dp else 16.dp,
                 ),
               ) {
                 Text(
@@ -502,37 +519,28 @@ fun AnalysisStep(
                   .align(Alignment.BottomCenter)
                   .fillMaxWidth()
                   .clip(RectangleShape),
-                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
               ) {
-                val caloriePosition = remember { Animatable(200f) }
-                val submitPosition = remember { Animatable(200f) }
-                LaunchedEffect(state.mealResponse) {
-                  val response = state.mealResponse
-                  if (response != null) {
-                    launch {
-                      caloriePosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
-                    }
-                    launch {
-                      delay(50)
-                      submitPosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
-                    }
-                  } else {
-                    caloriePosition.animateTo(200f, spring())
-                  }
-                }
                 Box(
                   modifier = Modifier
                     .graphicsLayer {
                       translationY = caloriePosition.value
                     }
                     .wrapContentSize()
-                    .clip(CircleShape)
-                    .background(color = MaterialTheme.colorScheme.secondary)
-                    .padding(8.dp)
+                    .clip(
+                      shape = RoundedCornerShape(
+                        topStartPercent = 50,
+                        topEndPercent = 10,
+                        bottomStartPercent = 50,
+                        bottomEndPercent = 10
+                      )
+                    )
+                    .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
                   Text(
                     "${state.mealResponse?.totalCalories} cal",
-                    color = MaterialTheme.colorScheme.onSecondary
+                    color = MaterialTheme.colorScheme.onSurface
                   )
                 }
                 Box(
@@ -541,10 +549,17 @@ fun AnalysisStep(
                       translationY = submitPosition.value
                     }
                     .wrapContentSize()
-                    .clip(CircleShape)
+                    .clip(
+                      shape = RoundedCornerShape(
+                        topStartPercent = 10,
+                        topEndPercent = 50,
+                        bottomStartPercent = 10,
+                        bottomEndPercent = 50
+                      )
+                    )
                     .clickable { actions(CameraFeature.Action.LogMeal) }
                     .background(color = CoolGreen)
-                    .padding(8.dp)
+                    .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
                   Icon(
                     imageVector = Icons.Rounded.Done,
