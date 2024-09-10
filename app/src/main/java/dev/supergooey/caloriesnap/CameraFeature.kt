@@ -1,6 +1,5 @@
 package dev.supergooey.caloriesnap
 
-import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.RenderEffect
@@ -9,20 +8,20 @@ import android.util.Base64
 import android.util.Log
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.WindowManager
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutQuint
 import androidx.compose.animation.core.EaseOutQuint
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -39,7 +38,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,19 +46,15 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -85,17 +79,15 @@ import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
@@ -108,7 +100,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
-import dev.supergooey.caloriesnap.ui.theme.CoolGreen
 import dev.supergooey.caloriesnap.ui.theme.CoolOrange
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import kotlinx.coroutines.delay
@@ -120,15 +111,10 @@ import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 
-
 @Preview
 @Composable
-private fun CameraScreenAnalyzePreview() {
-  CalorieSnapTheme {
-    val activity = LocalContext.current as Activity
-    activity.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-    WindowCompat.setDecorFitsSystemWindows(activity.window, false)
-
+fun CameraScreenAnalyzePreview() {
+  CalorieSnapTheme(darkTheme = true) {
     val bitmap = ImageBitmap.imageResource(R.drawable.bibimbap).asAndroidBitmap()
     var state by remember {
       mutableStateOf(
@@ -319,62 +305,136 @@ fun CameraScreen(
         }
 
         CameraFeatureStep.Analysis -> {
-          val rotation = remember { Animatable(0f) }
-          val radius = remember { Animatable(0f) }
-          val shader = remember { RuntimeShader(magnifyShader) }
-          val listState = rememberLazyListState()
+          AnalysisStep(
+            state = state,
+            sharedTransitionScope = this@SharedTransitionLayout,
+            animatedVisibilityScope = this@AnimatedContent,
+            animationDuration = animationDuration,
+            cornerRadius = cornerRadius,
+            actions = actions
+          )
+        }
+      }
+    }
+  }
+}
 
-          var time by remember { mutableFloatStateOf(0f) }
-          LaunchedEffect(Unit) {
-            do {
-              withFrameMillis {
-                time += 0.01f
-              }
-            } while (true)
-          }
+@Composable
+fun FrameTimer(
+  content: @Composable (Float) -> Unit
+) {
+  var time by remember { mutableFloatStateOf(0f) }
+  LaunchedEffect(Unit) {
+    do {
+      withFrameMillis {
+        time += 0.01f
+      }
+    } while (true)
+  }
+  content(time)
+}
 
-          LaunchedEffect(state.messages) {
-            if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.animateScrollToItem(listState.layoutInfo.totalItemsCount - 1)
-            }
-          }
+@Composable
+fun AnalysisStep(
+  state: CameraFeature.State,
+  sharedTransitionScope: SharedTransitionScope,
+  animatedVisibilityScope: AnimatedVisibilityScope,
+  animationDuration: Int,
+  cornerRadius: Dp,
+  actions: (CameraFeature.Action) -> Unit
+) {
 
-          LaunchedEffect(Unit) {
-            delay(animationDuration.toLong())
-            actions(CameraFeature.Action.AnalyzePhoto(state.capturedPhoto!!))
-          }
+  val shader = remember { RuntimeShader(magnifyShader) }
+  val rotation = remember { Animatable(0f) }
+  val radius = remember { Animatable(0f) }
+  val listState = rememberLazyListState()
 
-          LaunchedEffect(state.loading) {
-            if (state.loading) {
-              radius.animateTo(
-                0.3f,
-                animationSpec = tween(durationMillis = 500, easing = EaseOutQuint)
-              )
-            } else {
-              radius.animateTo(0.0f, tween(durationMillis = 200, easing = LinearEasing))
-            }
-          }
+  LaunchedEffect(Unit) {
+    delay(animationDuration.toLong())
+    actions(CameraFeature.Action.AnalyzePhoto(state.capturedPhoto!!))
+  }
 
-          Column(
-            modifier = Modifier
-              .fillMaxSize()
-              .background(color = Color.Black)
-              .windowInsetsPadding(WindowInsets.statusBars)
-              .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-          ) {
+  LaunchedEffect(state.loading) {
+    if (state.loading) {
+      radius.animateTo(
+        0.2f,
+        animationSpec = tween(durationMillis = 500, easing = EaseOutQuint)
+      )
+    } else {
+      radius.animateTo(0f, tween(durationMillis = 100, easing = EaseOutQuint))
+    }
+  }
+
+  LaunchedEffect(state.messages.size) {
+    listState.animateScrollToItem(0)
+  }
+
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(color = Color.Black)
+      .windowInsetsPadding(WindowInsets.statusBars)
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    FrameTimer { time ->
+      LazyColumn(
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1f),
+        state = listState,
+        reverseLayout = true,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
+        itemsIndexed(items = state.messages.reversed(), key = {_, item -> item.id  }) { index, message ->
+          if (message.content[0] is MessageContent.Text) {
+            val content = (message.content[0] as MessageContent.Text).text
+            val isUser = message.role == "user"
+            val alignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
+            val color = if (isUser) MaterialTheme.colorScheme.primaryContainer else Color.White
+            val textColor = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else Color.Black
+
             Box(
-              modifier = Modifier.size(300.dp),
-              contentAlignment = Alignment.BottomCenter
+              modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+              contentAlignment = alignment
             ) {
+              Surface(
+                modifier = Modifier.widthIn(max = 280.dp),
+                color = color,
+                contentColor = textColor,
+                shape = RoundedCornerShape(
+                  topStart = 16.dp,
+                  topEnd = 16.dp,
+                  bottomStart = if (isUser) 16.dp else 4.dp,
+                  bottomEnd = if (isUser) 4.dp else 16.dp,
+                ),
+              ) {
+                Text(
+                  modifier = Modifier
+                    .wrapContentHeight()
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                  text = content,
+                )
+              }
+            }
+          }
+        }
+        item {
+          Box(
+            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+            contentAlignment = Alignment.Center
+          ) {
+            with(sharedTransitionScope) {
               Image(
                 modifier = Modifier
                   .sharedElement(
                     state = rememberSharedContentState("image"),
-                    animatedVisibilityScope = this@AnimatedContent,
+                    animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ ->
-                      tween(durationMillis = animationDuration, easing = easing)
+                      tween(durationMillis = animationDuration, easing = EaseInOutQuint)
                     },
                   )
                   .graphicsLayer {
@@ -405,100 +465,28 @@ fun CameraScreen(
                       )
                       .asComposeRenderEffect()
                   }
-                  .size(300.dp)
+                  .size(200.dp)
                   .clip(RoundedCornerShape(cornerRadius)),
                 bitmap = state.capturedPhoto!!.asImageBitmap(),
                 contentScale = ContentScale.Crop,
                 contentDescription = "Photo"
               )
-              Row(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                AnimatedVisibility(
-                  state.mealResponse != null
-                ) {
-                  Box(
-                    modifier = Modifier
-                      .wrapContentSize()
-                      .clip(RoundedCornerShape(8.dp))
-                      .background(color = Color.White)
-                      .padding(8.dp)
-                  ) {
-                    Text("${state.mealResponse!!.totalCalories} cal")
-                  }
-                }
-                AnimatedVisibility(
-                  state.mealResponse != null
-                ) {
-                  Button(
-                    onClick = { actions(CameraFeature.Action.LogMeal) },
-                    colors = ButtonDefaults.buttonColors(containerColor = CoolGreen)
-                  ) {
-                    Icon(
-                      modifier = Modifier.size(16.dp),
-                      imageVector = Icons.Rounded.Check,
-                      tint = Color.White,
-                      contentDescription = "Save Meal"
-                    )
-                  }
-                }
-              }
-            }
-
-            LazyColumn(
-              modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-              state = listState,
-              verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              items(items = state.messages) { message ->
-                if (message.content[0] is MessageContent.Text) {
-                  val alignment = if (message.role == "user") Alignment.TopEnd else Alignment.TopStart
-                  val color = if (message.role == "user") MaterialTheme.colorScheme.primaryContainer else Color.White
-                  val textColor = if (message.role == "user") MaterialTheme.colorScheme.onPrimaryContainer else Color.Black
-
-                  val content = message.content[0] as MessageContent.Text
-                  Box(
-                    modifier = Modifier
-                      .animateItem()
-                      .fillMaxWidth()
-                      .wrapContentHeight(),
-                    contentAlignment = alignment
-                  ) {
-                    Text(
-                      modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .wrapContentHeight()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(color = color)
-                        .padding(8.dp),
-                      text = content.text,
-                      color = textColor
-                    )
-                  }
-                }
-              }
-            }
-            AnimatedVisibility(state.mealResponse?.valid == true) {
-              Column(
-                modifier = Modifier.imePadding(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-              ) {
-                Composer(
-                  modifier = Modifier.fillMaxWidth(),
-                  value = state.contextMessage,
-                  onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
-                  onSend = { actions(CameraFeature.Action.SendContextMessage) }
-                )
-              }
             }
           }
         }
+      }
+    }
+    AnimatedVisibility(state.mealResponse?.valid == true) {
+      Column(
+        modifier = Modifier.imePadding(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
+        Composer(
+          modifier = Modifier.fillMaxWidth(),
+          value = state.contextMessage,
+          onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
+          onSend = { actions(CameraFeature.Action.SendContextMessage) }
+        )
       }
     }
   }
