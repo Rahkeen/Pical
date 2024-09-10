@@ -2,6 +2,8 @@ package dev.supergooey.caloriesnap
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.RenderEffect
+import android.graphics.RuntimeShader
 import android.util.Base64
 import android.util.Log
 import android.view.ViewGroup
@@ -12,80 +14,108 @@ import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseInOutQuint
+import androidx.compose.animation.core.EaseOutQuint
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Done
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.graphics.shapes.CornerRounding
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.RoundedPolygon
+import androidx.graphics.shapes.circle
+import androidx.graphics.shapes.star
+import androidx.graphics.shapes.toPath
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolGreen
+import dev.supergooey.caloriesnap.ui.theme.CoolOrange
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -96,12 +126,70 @@ import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 
-fun Bitmap.rotate(degrees: Int): Bitmap {
-  val matrix = Matrix().apply {
-    postRotate(degrees.toFloat())
-  }
+@Preview
+@Composable
+fun CameraScreenAnalyzePreview() {
+  CalorieSnapTheme(darkTheme = true) {
+    val bitmap = ImageBitmap.imageResource(R.drawable.bibimbap).asAndroidBitmap()
+    var state by remember {
+      mutableStateOf(
+        CameraFeature.State(
+          capturedPhoto = bitmap,
+          mealResponse = MealResponse(
+            foodTitle = "Bibimbap",
+            foodDescription = "This is some bibibibibibibibibimbap bap bap bap hahahah hahhaha klajsdhfkajsdh",
+            totalCalories = 1000,
+            valid = true
+          ),
+          messages = listOf(
+            Message(
+              role = "system",
+              content = listOf(
+                MessageContent.Text(
+                  text = "This is some bibibibibibibibibimbap bap bap bap hahahah hahhaha klajsdhfkajsdh"
+                )
+              )
+            ),
+            Message(
+              role = "user",
+              content = listOf(
+                MessageContent.Text(
+                  text = "I think you might be a bit broken there buddy."
+                )
+              )
+            ),
+          ),
+          step = CameraFeatureStep.Analysis
+        )
+      )
+    }
+    CameraScreen(
+      state = state,
+      actions = { action ->
+        when (action) {
+          is CameraFeature.Action.AnalyzePhoto -> {}
+          CameraFeature.Action.SendContextMessage -> {
+            state = state.copy(
+              contextMessage = "",
+              messages = state.messages + Message(
+                role = "user",
+                content = listOf(MessageContent.Text(state.contextMessage))
+              )
+            )
+          }
 
-  return Bitmap.createBitmap(this, 0, 0, width, height, matrix, false)
+          is CameraFeature.Action.UpdateContextMessage -> {
+            state = state.copy(
+              contextMessage = action.message
+            )
+          }
+
+          CameraFeature.Action.LogMeal -> {}
+          is CameraFeature.Action.TakePhoto -> {}
+        }
+      }
+    )
+  }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -142,240 +230,344 @@ fun CameraScreen(
     )
   }
 
-  SharedTransitionLayout {
-    transition.AnimatedContent(
-      transitionSpec = { fadeIn().togetherWith(fadeOut()) },
-    ) { step ->
-      when (step) {
-        CameraFeatureStep.Camera -> {
-          Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .background(color = Color.Black),
-            contentAlignment = Alignment.Center
-          ) {
-            if (state.capturedPhoto == null) {
-              AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                  PreviewView(ctx).apply {
-                    layoutParams =
-                      ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                    scaleType = PreviewView.ScaleType.FIT_CENTER
+  CalorieSnapTheme(darkTheme = true) {
+    SharedTransitionLayout {
+      transition.AnimatedContent(
+        transitionSpec = { fadeIn().togetherWith(fadeOut()) },
+      ) { step ->
+        when (step) {
+          CameraFeatureStep.Camera -> {
+            Box(
+              modifier = Modifier
+                .fillMaxSize()
+                .background(color = Color.Black),
+              contentAlignment = Alignment.Center
+            ) {
+              if (state.capturedPhoto == null) {
+                AndroidView(
+                  modifier = Modifier.fillMaxSize(),
+                  factory = { ctx ->
+                    PreviewView(ctx).apply {
+                      layoutParams =
+                        ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                      setBackgroundColor(android.graphics.Color.BLACK)
+                      scaleType = PreviewView.ScaleType.FIT_CENTER
+                    }
+                  },
+                  update = { view ->
+                    view.controller = cameraController
+                    cameraController.bindToLifecycle(lifecycleOwner)
                   }
-                },
-                update = { view ->
-                  view.controller = cameraController
-                  cameraController.bindToLifecycle(lifecycleOwner)
-                }
-              )
-              Box(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .windowInsetsPadding(WindowInsets.navigationBars)
-                  .padding(16.dp)
-              ) {
+                )
                 Box(
                   modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .clickable { takePicture() }
-                    .background(color = CoolRed)
-                    .align(Alignment.BottomCenter),
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(16.dp)
+                ) {
+                  val shape1 = remember {
+                    RoundedPolygon.circle(
+                      numVertices = 12
+                    )
+                  }
+                  val shape2 = remember {
+                    RoundedPolygon.star(
+                      numVerticesPerRadius = 12,
+                      innerRadius = 0.8f,
+                      rounding = CornerRounding(radius = 0.5f)
+                    )
+                  }
+                  val morph = remember { Morph(shape1, shape2) }
+                  val interactionSource = remember { MutableInteractionSource() }
+                  val isPressed by interactionSource.collectIsPressedAsState()
+                  val morphProgress by animateFloatAsState(
+                    targetValue = if (isPressed) 1f else 0f,
+                    animationSpec = spring(),
+                    label = ""
+                  )
+                  val pressedScale by animateFloatAsState(
+                    targetValue = if (isPressed) 1.2f else 1f,
+                    animationSpec = spring(),
+                    label = ""
+                  )
+                  val buttonColor by animateColorAsState(
+                    targetValue = if (isPressed) CoolOrange else CoolRed,
+                    animationSpec = spring(),
+                    label = ""
+                  )
+                  Box(
+                    modifier = Modifier
+                      .scale(pressedScale)
+                      .size(80.dp)
+                      .clip(MorphPolygonShape(morph, morphProgress))
+                      .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                      ) { takePicture() }
+                      .background(color = buttonColor)
+                      .align(Alignment.BottomCenter),
+                  )
+                }
+              } else {
+                Image(
+                  modifier = Modifier
+                    .sharedElement(
+                      state = rememberSharedContentState(key = "image"),
+                      boundsTransform = { _, _ ->
+                        tween(
+                          durationMillis = animationDuration,
+                          easing = easing
+                        )
+                      },
+                      animatedVisibilityScope = this@AnimatedContent
+                    )
+                    .clip(RoundedCornerShape(cornerRadius)),
+                  bitmap = state.capturedPhoto.asImageBitmap(),
+                  contentDescription = "Photo"
                 )
               }
-            } else {
-              Image(
+            }
+          }
+
+          CameraFeatureStep.Analysis -> {
+            AnalysisStep(
+              state = state,
+              sharedTransitionScope = this@SharedTransitionLayout,
+              animatedVisibilityScope = this@AnimatedContent,
+              animationDuration = animationDuration,
+              cornerRadius = cornerRadius,
+              actions = actions
+            )
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun FrameTimer(
+  content: @Composable (Float) -> Unit
+) {
+  var time by remember { mutableFloatStateOf(0f) }
+  LaunchedEffect(Unit) {
+    do {
+      withFrameMillis {
+        time += 0.01f
+      }
+    } while (true)
+  }
+  content(time)
+}
+
+@Composable
+fun AnalysisStep(
+  state: CameraFeature.State,
+  sharedTransitionScope: SharedTransitionScope,
+  animatedVisibilityScope: AnimatedVisibilityScope,
+  animationDuration: Int,
+  cornerRadius: Dp,
+  actions: (CameraFeature.Action) -> Unit
+) {
+  val shader = remember { RuntimeShader(magnifyShader) }
+  val rotation = remember { Animatable(0f) }
+  val radius = remember { Animatable(0f) }
+  val listState = rememberLazyListState()
+
+  LaunchedEffect(Unit) {
+    delay(animationDuration.toLong())
+    actions(CameraFeature.Action.AnalyzePhoto(state.capturedPhoto!!))
+  }
+
+  LaunchedEffect(state.loading) {
+    if (state.loading) {
+      radius.animateTo(
+        0.2f,
+        animationSpec = tween(durationMillis = 500, easing = EaseOutQuint)
+      )
+    } else {
+      radius.animateTo(targetValue = 0f, animationSpec = spring(stiffness = Spring.StiffnessMedium))
+    }
+  }
+
+  LaunchedEffect(state.messages.size) {
+    listState.animateScrollToItem(0)
+  }
+
+  val caloriePosition = remember { Animatable(200f) }
+  val submitPosition = remember { Animatable(200f) }
+  LaunchedEffect(state.mealResponse) {
+    val response = state.mealResponse
+    if (response != null) {
+      launch {
+        caloriePosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+      }
+      launch {
+        delay(50)
+        submitPosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+      }
+    } else {
+      caloriePosition.animateTo(200f, spring())
+    }
+  }
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(color = Color.Black)
+      .windowInsetsPadding(WindowInsets.systemBars)
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    FrameTimer { time ->
+      LazyColumn(
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1f),
+        state = listState,
+        reverseLayout = true,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        itemsIndexed(
+          items = state.messages.reversed(),
+          key = { _, item -> item.id }) { index, message ->
+          if (message.content[0] is MessageContent.Text) {
+            val content = (message.content[0] as MessageContent.Text).text
+            val isUser = message.role == "user"
+            val alignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
+            val color = if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer
+            val textColor = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+              contentAlignment = alignment
+            ) {
+              Surface(
                 modifier = Modifier
-                  .sharedElement(
-                    state = rememberSharedContentState(key = "image"),
-                    boundsTransform = { _, _ ->
-                      tween(
-                        durationMillis = animationDuration,
-                        easing = easing
-                      )
-                    },
-                    animatedVisibilityScope = this@AnimatedContent
-                  )
-                  .clip(RoundedCornerShape(cornerRadius)),
-                bitmap = state.capturedPhoto.asImageBitmap(),
-                contentDescription = "Photo"
-              )
+                  .animateItem()
+                  .widthIn(max = 280.dp),
+                color = color,
+                contentColor = textColor,
+                shape = RoundedCornerShape(
+                  bottomStart = 16.dp,
+                  bottomEnd = 16.dp,
+                  topStart = if (isUser) 16.dp else 4.dp,
+                  topEnd = if (isUser) 4.dp else 16.dp,
+                ),
+              ) {
+                Text(
+                  modifier = Modifier
+                    .wrapContentHeight()
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                  text = content,
+                )
+              }
             }
           }
         }
-
-        CameraFeatureStep.Analysis -> {
-          val rotation = remember { Animatable(0f) }
-          val listState = rememberLazyListState()
-
-          LaunchedEffect(state.messages) {
-            if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.animateScrollToItem(listState.layoutInfo.totalItemsCount-1)
-            }
-          }
-
-          LaunchedEffect(Unit) {
-            delay(animationDuration.toLong())
-            actions(CameraFeature.Action.AnalyzePhoto(state.capturedPhoto!!))
-          }
-
-          LaunchedEffect(state.loading) {
-            if (state.loading) {
-              delay(animationDuration.toLong())
-              while (true) {
-                rotation.animateTo(
-                  2f,
-                  animationSpec = tween(durationMillis = 200, easing = EaseInOut)
-                )
-                rotation.animateTo(
-                  -2f,
-                  animationSpec = tween(durationMillis = 200, easing = EaseInOut)
-                )
-              }
-            } else {
-              rotation.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
-            }
-          }
-
-          Column(
-            modifier = Modifier
-              .fillMaxSize()
-              .background(color = Color.Black)
-              .windowInsetsPadding(WindowInsets.statusBars)
-              .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        item {
+          Box(
+            modifier = Modifier.size(220.dp),
+            contentAlignment = Alignment.Center
           ) {
-            Image(
-              modifier = Modifier
-                .sharedElement(
-                  state = rememberSharedContentState("image"),
-                  animatedVisibilityScope = this@AnimatedContent,
-                  boundsTransform = { _, _ ->
-                    tween(durationMillis = animationDuration, easing = easing)
-                  },
-                )
-                .graphicsLayer {
-                  rotationZ = rotation.value
-                }
-                .size(300.dp)
-                .clip(RoundedCornerShape(cornerRadius)),
-              bitmap = state.capturedPhoto!!.asImageBitmap(),
-              contentScale = ContentScale.Crop,
-              contentDescription = "Photo"
-            )
-            LazyColumn(
-              modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-              state = listState,
-              verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              items(items = state.messages) { message ->
-                if (message.content[0] is MessageContent.Text) {
-                  val alignment = if (message.role == "user") Alignment.TopEnd else Alignment.TopStart
-                  val color = if (message.role == "user") MaterialTheme.colorScheme.primaryContainer else Color.White
-                  val textColor = if (message.role == "user") MaterialTheme.colorScheme.onPrimaryContainer else Color.Black
-
-                  val content = message.content[0] as MessageContent.Text
-                  Box(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .wrapContentHeight(),
-                    contentAlignment = alignment
-                  ) {
-                    Text(
-                      modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .wrapContentHeight()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(color = color)
-                        .padding(8.dp),
-                      text = content.text,
-                      color = textColor
-                    )
-                  }
-                }
-              }
-            }
-            AnimatedVisibility(state.mealResponse?.valid == true) {
-              Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                  text = "Add some context",
-                  style = TextStyle(
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+            with(sharedTransitionScope) {
+              Image(
+                modifier = Modifier
+                  .sharedElement(
+                    state = rememberSharedContentState("image"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ ->
+                      tween(durationMillis = animationDuration, easing = EaseInOutQuint)
+                    },
                   )
-                )
-                BasicTextField(
-                  value = state.contextMessage,
-                  onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
-                  textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
-                  keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Go
-                  ),
-                  keyboardActions = KeyboardActions(onGo = { actions(CameraFeature.Action.SendContextMessage) }),
-                  cursorBrush = SolidColor(value = MaterialTheme.colorScheme.onPrimaryContainer)
-                ) { innerTextField ->
-                  Row(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .wrapContentHeight()
-                      .clip(
-                        RoundedCornerShape(8.dp)
-                      )
-                      .background(color = MaterialTheme.colorScheme.primaryContainer)
-                      .padding(vertical = 16.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                  ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                      innerTextField()
-                    }
-                    Icon(
-                      modifier = Modifier
-                        .size(24.dp)
-                        .clickable { actions(CameraFeature.Action.SendContextMessage) },
-                      imageVector = Icons.AutoMirrored.Rounded.Send,
-                      tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                      contentDescription = "Send Context Message"
+                  .graphicsLayer {
+                    clip = true
+                    rotationZ = rotation.value
+                    shader.setFloatUniform(
+                      "time",
+                      time
                     )
+                    shader.setFloatUniform(
+                      "size",
+                      size.width,
+                      size.height
+                    )
+                    shader.setFloatUniform(
+                      "glass",
+                      0.5f,
+                      0.3f
+                    )
+                    shader.setFloatUniform(
+                      "glassRadius",
+                      radius.value,
+                    )
+                    renderEffect = RenderEffect
+                      .createRuntimeShaderEffect(
+                        shader,
+                        "image"
+                      )
+                      .asComposeRenderEffect()
                   }
-                }
-              }
-            }
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              AnimatedVisibility(state.mealResponse?.valid == true) {
+                  .size(200.dp)
+                  .clip(RoundedCornerShape(cornerRadius)),
+                bitmap = state.capturedPhoto!!.asImageBitmap(),
+                contentScale = ContentScale.Crop,
+                contentDescription = "Photo"
+              )
+              Row(
+                modifier = Modifier
+                  .align(Alignment.BottomCenter)
+                  .fillMaxWidth()
+                  .clip(RectangleShape),
+                horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
+              ) {
                 Box(
                   modifier = Modifier
+                    .graphicsLayer {
+                      translationY = caloriePosition.value
+                    }
                     .wrapContentSize()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(color = Color.White)
-                    .padding(8.dp)
+                    .clip(
+                      shape = RoundedCornerShape(
+                        topStartPercent = 50,
+                        topEndPercent = 10,
+                        bottomStartPercent = 50,
+                        bottomEndPercent = 10
+                      )
+                    )
+                    .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
                   Text(
-                    text = "Calories: ${state.mealResponse?.totalCalories}",
-                    color = Color.Black
+                    text = "${state.mealResponse?.totalCalories} cal",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium
                   )
                 }
-              }
-              AnimatedVisibility(state.mealResponse?.valid == true) {
-                Button(
-                  onClick = { actions(CameraFeature.Action.LogMeal) },
-                  colors = ButtonDefaults.buttonColors(containerColor = CoolGreen)
+                Box(
+                  modifier = Modifier
+                    .graphicsLayer {
+                      translationY = submitPosition.value
+                    }
+                    .wrapContentSize()
+                    .clip(
+                      shape = RoundedCornerShape(
+                        topStartPercent = 10,
+                        topEndPercent = 50,
+                        bottomStartPercent = 10,
+                        bottomEndPercent = 50
+                      )
+                    )
+                    .clickable { actions(CameraFeature.Action.LogMeal) }
+                    .background(color = CoolGreen)
+                    .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
                   Icon(
-                    modifier = Modifier.size(24.dp),
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = "Save"
+                    painter = painterResource(R.drawable.ic_check),
+                    contentDescription = "Accept",
+                    tint = Color.White
                   )
                 }
               }
@@ -384,14 +576,36 @@ fun CameraScreen(
         }
       }
     }
+
+    AnimatedVisibility(
+      state.mealResponse?.valid == true,
+      enter = slideInVertically { it },
+      exit = slideOutVertically { -it }
+    ) {
+      Composer(
+        modifier = Modifier
+          .imePadding()
+          .fillMaxWidth(),
+        value = state.contextMessage,
+        onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
+        onSend = { actions(CameraFeature.Action.SendContextMessage) }
+      )
+    }
   }
+}
+
+fun Bitmap.rotate(degrees: Int): Bitmap {
+  val matrix = Matrix().apply {
+    postRotate(degrees.toFloat())
+  }
+
+  return Bitmap.createBitmap(this, 0, 0, width, height, matrix, false)
 }
 
 enum class CameraFeatureStep {
   Camera,
   Analysis
 }
-
 
 interface CameraFeature {
   data class State(
@@ -407,8 +621,8 @@ interface CameraFeature {
     data class TakePhoto(val bitmap: Bitmap) : Action
     data class AnalyzePhoto(val bitmap: Bitmap) : Action
     data object LogMeal : Action
-    data class UpdateContextMessage(val message: String): Action
-    data object SendContextMessage: Action
+    data class UpdateContextMessage(val message: String) : Action
+    data object SendContextMessage : Action
   }
 }
 
@@ -478,7 +692,7 @@ class CameraViewModel(
             }
           } else {
             Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
-            internalState.update { current -> current.copy( loading = false, ) }
+            internalState.update { current -> current.copy(loading = false) }
           }
         }
       }
@@ -503,7 +717,13 @@ class CameraViewModel(
           val messages = internalState.value.messages.toMutableList().apply {
             add(message)
           }
-          internalState.update { it.copy(loading = true, contextMessage = "", messages = messages.toList()) }
+          internalState.update {
+            it.copy(
+              loading = true,
+              contextMessage = "",
+              messages = messages.toList()
+            )
+          }
 
           val response = ImageToCalorieClient.api.getMessages(MessagesRequest(messages = messages))
 
@@ -560,13 +780,6 @@ class CameraViewModel(
   }
 }
 
-fun MessagesResponse.toMessage(): Message {
-  return Message(
-    role = role,
-    content = content
-  )
-}
-
 fun MealResponse.toMealLog(
   imageUri: String?,
   timestamp: Long = System.currentTimeMillis(),
@@ -581,5 +794,24 @@ fun MealResponse.toMealLog(
     time = timestamp,
     logDate = date
   )
+}
+
+class MorphPolygonShape(
+  private val morph: Morph,
+  private val percentage: Float
+) : Shape {
+
+  private val matrix = androidx.compose.ui.graphics.Matrix()
+  override fun createOutline(
+    size: Size,
+    layoutDirection: LayoutDirection,
+    density: Density
+  ): Outline {
+    matrix.scale(size.width / 2f, size.height / 2f)
+    matrix.translate(1f, 1f)
+    val path = morph.toPath(percentage).asComposePath()
+    path.transform(matrix)
+    return Outline.Generic(path)
+  }
 }
 

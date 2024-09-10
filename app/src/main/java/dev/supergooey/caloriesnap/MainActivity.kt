@@ -31,7 +31,8 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     setContent {
       CalorieSnapTheme {
-        App()
+//        App()
+        CameraScreenAnalyzePreview()
       }
     }
   }

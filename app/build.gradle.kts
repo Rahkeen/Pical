@@ -48,6 +48,12 @@ android {
   }
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_17.toString()
+    freeCompilerArgs += listOf(
+      "-Xopt-in=kotlin.RequiresOptIn",
+      "-Xopt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
+      "-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+      "-Xopt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi"
+    )
   }
   buildFeatures {
     compose = true
@@ -73,6 +79,7 @@ dependencies {
   implementation(libs.androidx.ui.tooling.preview)
   implementation(libs.androidx.material3)
   implementation(libs.androidx.animation)
+  implementation(libs.androidx.compose.material3)
 
   implementation(libs.camerax)
   implementation(libs.camerax.view)
