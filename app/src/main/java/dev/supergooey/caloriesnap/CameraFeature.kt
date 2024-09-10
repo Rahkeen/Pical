@@ -30,6 +30,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -39,7 +41,9 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imeNestedScroll
@@ -51,10 +55,15 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Done
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -74,6 +83,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asComposePath
@@ -102,6 +112,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.caloriesnap.ui.theme.CoolGreen
 import dev.supergooey.caloriesnap.ui.theme.CoolOrange
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import kotlinx.coroutines.delay
@@ -153,8 +164,8 @@ fun CameraScreenAnalyzePreview() {
     CameraScreen(
       state = state,
       actions = { action ->
-        when(action) {
-          is CameraFeature.Action.AnalyzePhoto -> { }
+        when (action) {
+          is CameraFeature.Action.AnalyzePhoto -> {}
           CameraFeature.Action.SendContextMessage -> {
             state = state.copy(
               contextMessage = "",
@@ -164,14 +175,15 @@ fun CameraScreenAnalyzePreview() {
               )
             )
           }
+
           is CameraFeature.Action.UpdateContextMessage -> {
             state = state.copy(
               contextMessage = action.message
             )
           }
 
-          CameraFeature.Action.LogMeal -> { }
-          is CameraFeature.Action.TakePhoto -> { }
+          CameraFeature.Action.LogMeal -> {}
+          is CameraFeature.Action.TakePhoto -> {}
         }
       }
     )
@@ -396,13 +408,16 @@ fun AnalysisStep(
         reverseLayout = true,
         verticalArrangement = Arrangement.spacedBy(4.dp)
       ) {
-        itemsIndexed(items = state.messages.reversed(), key = {_, item -> item.id  }) { index, message ->
+        itemsIndexed(
+          items = state.messages.reversed(),
+          key = { _, item -> item.id }) { index, message ->
           if (message.content[0] is MessageContent.Text) {
             val content = (message.content[0] as MessageContent.Text).text
             val isUser = message.role == "user"
             val alignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
             val color = if (isUser) MaterialTheme.colorScheme.primaryContainer else Color.White
-            val textColor = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else Color.Black
+            val textColor =
+              if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else Color.Black
 
             Box(
               modifier = Modifier
@@ -411,7 +426,9 @@ fun AnalysisStep(
               contentAlignment = alignment
             ) {
               Surface(
-                modifier = Modifier.widthIn(max = 280.dp),
+                modifier = Modifier
+                  .animateItem()
+                  .widthIn(max = 280.dp),
                 color = color,
                 contentColor = textColor,
                 shape = RoundedCornerShape(
@@ -433,9 +450,7 @@ fun AnalysisStep(
         }
         item {
           Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .wrapContentHeight(),
+            modifier = Modifier.size(220.dp),
             contentAlignment = Alignment.Center
           ) {
             with(sharedTransitionScope) {
@@ -476,20 +491,83 @@ fun AnalysisStep(
                       )
                       .asComposeRenderEffect()
                   }
-                  .size(300.dp)
+                  .size(200.dp)
                   .clip(RoundedCornerShape(cornerRadius)),
                 bitmap = state.capturedPhoto!!.asImageBitmap(),
                 contentScale = ContentScale.Crop,
                 contentDescription = "Photo"
               )
+              Row(
+                modifier = Modifier
+                  .align(Alignment.BottomCenter)
+                  .fillMaxWidth()
+                  .clip(RectangleShape),
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+              ) {
+                val caloriePosition = remember { Animatable(200f) }
+                val submitPosition = remember { Animatable(200f) }
+                LaunchedEffect(state.mealResponse) {
+                  val response = state.mealResponse
+                  if (response != null) {
+                    launch {
+                      caloriePosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+                    }
+                    launch {
+                      delay(50)
+                      submitPosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+                    }
+                  } else {
+                    caloriePosition.animateTo(200f, spring())
+                  }
+                }
+                Box(
+                  modifier = Modifier
+                    .graphicsLayer {
+                      translationY = caloriePosition.value
+                    }
+                    .wrapContentSize()
+                    .clip(CircleShape)
+                    .background(color = MaterialTheme.colorScheme.secondary)
+                    .padding(8.dp)
+                ) {
+                  Text(
+                    "${state.mealResponse?.totalCalories} cal",
+                    color = MaterialTheme.colorScheme.onSecondary
+                  )
+                }
+                Box(
+                  modifier = Modifier
+                    .graphicsLayer {
+                      translationY = submitPosition.value
+                    }
+                    .wrapContentSize()
+                    .clip(CircleShape)
+                    .clickable { actions(CameraFeature.Action.LogMeal) }
+                    .background(color = CoolGreen)
+                    .padding(8.dp)
+                ) {
+                  Icon(
+                    imageVector = Icons.Rounded.Done,
+                    contentDescription = "Accept",
+                    tint = Color.White
+                  )
+                }
+              }
             }
           }
         }
       }
     }
-    AnimatedVisibility(state.mealResponse?.valid == true) {
+
+    AnimatedVisibility(
+      state.mealResponse?.valid == true,
+      enter = slideInVertically { it },
+      exit = slideOutVertically { -it }
+    ) {
       Composer(
-        modifier = Modifier.imePadding().fillMaxWidth(),
+        modifier = Modifier
+          .imePadding()
+          .fillMaxWidth(),
         value = state.contextMessage,
         onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
         onSend = { actions(CameraFeature.Action.SendContextMessage) }
@@ -510,7 +588,6 @@ enum class CameraFeatureStep {
   Camera,
   Analysis
 }
-
 
 interface CameraFeature {
   data class State(
@@ -597,7 +674,7 @@ class CameraViewModel(
             }
           } else {
             Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
-            internalState.update { current -> current.copy( loading = false) }
+            internalState.update { current -> current.copy(loading = false) }
           }
         }
       }
@@ -622,7 +699,13 @@ class CameraViewModel(
           val messages = internalState.value.messages.toMutableList().apply {
             add(message)
           }
-          internalState.update { it.copy(loading = true, contextMessage = "", messages = messages.toList()) }
+          internalState.update {
+            it.copy(
+              loading = true,
+              contextMessage = "",
+              messages = messages.toList()
+            )
+          }
 
           val response = ImageToCalorieClient.api.getMessages(MessagesRequest(messages = messages))
 
