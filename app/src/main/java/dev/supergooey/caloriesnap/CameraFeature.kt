@@ -93,6 +93,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -539,8 +541,9 @@ fun AnalysisStep(
                     .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
                   Text(
-                    "${state.mealResponse?.totalCalories} cal",
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "${state.mealResponse?.totalCalories} cal",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium
                   )
                 }
                 Box(
@@ -562,7 +565,7 @@ fun AnalysisStep(
                     .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
                   Icon(
-                    imageVector = Icons.Rounded.Done,
+                    painter = painterResource(R.drawable.ic_check),
                     contentDescription = "Accept",
                     tint = Color.White
                   )
