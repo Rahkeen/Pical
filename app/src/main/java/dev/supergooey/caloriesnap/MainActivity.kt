@@ -23,6 +23,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.supergooey.caloriesnap.features.dailylog.DailyLogScreen
+import dev.supergooey.caloriesnap.features.dailylog.DailyLogViewModel
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 
 class MainActivity : ComponentActivity() {
@@ -31,8 +33,8 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     setContent {
       CalorieSnapTheme {
-//        App()
-        CameraScreenAnalyzePreview()
+        App()
+//        CameraScreenAnalyzePreview()
       }
     }
   }
@@ -54,14 +56,14 @@ fun App() {
     popExitTransition = { scaleOut(targetScale = 1.10f) + fadeOut() }
   ) {
     composable("home") {
-      val model = viewModel<HomeViewModel>(
-        factory = HomeViewModel.Factory(
+      val model = viewModel<DailyLogViewModel>(
+        factory = DailyLogViewModel.Factory(
           logStore = MealLogDatabase.getDatabase(context)
         )
       )
       val state by model.state.collectAsState()
 
-      HomeScreen(state = state) { location ->
+      DailyLogScreen(state = state) { location ->
         navController.navigate(location.route)
       }
     }

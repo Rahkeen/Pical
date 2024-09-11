@@ -52,7 +52,8 @@ android {
       "-Xopt-in=kotlin.RequiresOptIn",
       "-Xopt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
       "-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-      "-Xopt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi"
+      "-Xopt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
+      "-Xopt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi"
     )
   }
   buildFeatures {
