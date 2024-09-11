@@ -97,10 +97,16 @@ fun DailyLogScreen(
         modifier = Modifier
           .windowInsetsPadding(insets = WindowInsets.statusBars)
           .fillMaxWidth()
-          .height(80.dp),
+          .height(80.dp)
+          .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.SpaceBetween
       ) {
+        Icon(
+          painter = painterResource(R.drawable.ic_nutrition),
+          tint = MaterialTheme.colorScheme.onSurface,
+          contentDescription = ""
+        )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           Text(
             text = "Today",
@@ -114,6 +120,11 @@ fun DailyLogScreen(
             fontSize = 12.sp
           )
         }
+        Icon(
+          painter = painterResource(R.drawable.ic_nutrition),
+          tint = MaterialTheme.colorScheme.onSurface,
+          contentDescription = ""
+        )
       }
     }
   ) { paddingValues ->
@@ -413,7 +424,7 @@ private fun DailyLogRow3(
       .clip(RoundedCornerShape(20.dp))
       .background(MaterialTheme.colorScheme.surfaceContainer)
       .clickable(
-        indication = ripple(color = MaterialTheme.colorScheme.primary),
+        indication = ripple(color = MaterialTheme.colorScheme.tertiaryContainer),
         interactionSource = interactionSource
       ) { onClick() }
       .padding(8.dp),
