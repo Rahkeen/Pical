@@ -21,7 +21,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -30,13 +33,16 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
@@ -51,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.CornerRounding
@@ -59,6 +67,7 @@ import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.circle
 import coil.compose.AsyncImage
 import com.google.accompanist.permissions.rememberPermissionState
+import dev.supergooey.caloriesnap.CameraFeature
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
@@ -126,36 +135,65 @@ fun DailyLogScreen(
           contentDescription = ""
         )
       }
+    },
+    bottomBar = {
+      Row(
+        modifier = Modifier
+          .graphicsLayer { clip = false }
+          .windowInsetsPadding(WindowInsets.navigationBars)
+          .fillMaxWidth()
+          .height(60.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.Top
+      ) {
+        Box(
+          modifier = Modifier
+            .requiredSize(80.dp)
+            .offset { IntOffset(x = 0, y = -(20.dp).roundToPx()) }
+            .clip(CircleShape)
+            .background(color = MaterialTheme.colorScheme.primaryContainer)
+            .clickable { navigate(DailyLogFeature.Location.Camera) },
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            modifier = Modifier.size(32.dp),
+            painter = painterResource(R.drawable.ic_capture),
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            contentDescription = "Capture"
+          )
+        }
+      }
     }
   ) { paddingValues ->
     Surface(
       modifier = Modifier.padding(paddingValues),
       shape = RoundedCornerShape(
-        topStart = 28.dp,
-        topEnd = 28.dp
+        28.dp
       )
     ) {
-      LazyColumn(
-        modifier = Modifier
-          .fillMaxSize()
-          .padding(horizontal = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        item {
-          Spacer(modifier = Modifier.height(0.dp))
-        }
-        itemsIndexed(items = state.logs, key = { _, item -> item.id }) { index, log ->
-          DailyLogRow3(
-            modifier = Modifier
-              .animateItem()
-              .fillMaxWidth()
-              .wrapContentHeight(),
-            log = log,
-            onClick = { navigate(DailyLogFeature.Location.Log(log.id)) }
-          )
-        }
-        item {
-          Spacer(modifier = Modifier.height(16.dp))
+      Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          item {
+            Spacer(modifier = Modifier.height(0.dp))
+          }
+          itemsIndexed(items = state.logs, key = { _, item -> item.id }) { index, log ->
+            DailyLogRow3(
+              modifier = Modifier
+                .animateItem()
+                .fillMaxWidth()
+                .wrapContentHeight(),
+              log = log,
+              onClick = { navigate(DailyLogFeature.Location.Log(log.id)) }
+            )
+          }
+          item {
+            Spacer(modifier = Modifier.height(16.dp))
+          }
         }
       }
     }
