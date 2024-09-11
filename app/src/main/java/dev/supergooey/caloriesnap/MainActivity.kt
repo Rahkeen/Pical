@@ -8,6 +8,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -50,10 +53,6 @@ fun App() {
       .background(color = MaterialTheme.colorScheme.background),
     navController = navController,
     startDestination = "home",
-    enterTransition = { scaleIn(initialScale = 1.10f) + fadeIn() },
-    exitTransition = { scaleOut(targetScale = 0.95f) + fadeOut() },
-    popEnterTransition = { scaleIn(initialScale = 0.95f) + fadeIn() },
-    popExitTransition = { scaleOut(targetScale = 1.10f) + fadeOut() }
   ) {
     composable("home") {
       val model = viewModel<DailyLogViewModel>(
@@ -67,7 +66,11 @@ fun App() {
         navController.navigate(location.route)
       }
     }
-    composable("camera") {
+    composable(
+      route = "camera",
+      enterTransition = { slideInHorizontally { it } },
+      exitTransition = { slideOutHorizontally { it } }
+    ) {
       val cameraViewModel = viewModel<CameraViewModel>(
         factory = CameraViewModel.Factory(
           store = context.cameraStore(),
