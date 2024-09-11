@@ -22,18 +22,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -55,7 +52,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.CornerRounding
@@ -77,11 +73,11 @@ private fun DailyLogScreenPreview() {
     DailyLogScreen(
       state = DailyLogFeature.State(
         listOf(
-          MealLog(foodTitle = "Item One", valid = true),
-          MealLog(foodTitle = "Item Two", valid = true),
-          MealLog(foodTitle = "Item Three", valid = true),
-          MealLog(foodTitle = "Item Four", valid = true),
-          MealLog(foodTitle = "Item Five", valid = true),
+          MealLog(id = 0, foodTitle = "Item One", valid = true),
+          MealLog(id = 1, foodTitle = "Item Two", valid = true),
+          MealLog(id = 2, foodTitle = "Item Three", valid = true),
+          MealLog(id = 3, foodTitle = "Item Four", valid = true),
+          MealLog(id = 4, foodTitle = "Item Five", valid = true),
         )
       ),
       navigate = {}
@@ -98,74 +94,49 @@ fun DailyLogScreen(
   Scaffold(
     containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
     topBar = {
-      Row(
-        modifier = Modifier
-          .windowInsetsPadding(insets = WindowInsets.statusBars)
-          .fillMaxWidth()
-          .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-      ) {
-        Box(
-          modifier = Modifier
-            .clip(CircleShape)
-            .clickable { navigate(DailyLogFeature.Location.History) }
-            .padding(8.dp)
-        ) {
-          Icon(
-            painter = painterResource(R.drawable.ic_history),
-            tint = MaterialTheme.colorScheme.secondary,
-            contentDescription = ""
-          )
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          Text(
-            text = "Today",
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.displayLarge
-          )
-          Text(
-            text = "${state.caloriesForDay} cal",
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Medium,
-            fontSize = 12.sp
-          )
-        }
-        Box(modifier = Modifier
-          .clip(CircleShape)
-          .padding(8.dp)) {
-          Icon(
-            painter = painterResource(R.drawable.ic_settings),
-            tint = MaterialTheme.colorScheme.secondary,
-            contentDescription = ""
-          )
-        }
-      }
+      PicalTopBar(state, navigate)
     },
     floatingActionButton = {
-      val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
-      Box(
-        modifier = Modifier
-          .size(80.dp)
-          .clip(CircleShape)
-          .background(color = MaterialTheme.colorScheme.tertiaryContainer)
-          .clickable {
-            if (cameraPermissionState.status.isGranted) {
-              navigate(DailyLogFeature.Location.Camera)
-            } else {
-              cameraPermissionState.launchPermissionRequest()
-            }
-          },
-        contentAlignment = Alignment.Center
-      ) {
-        Icon(
-          modifier = Modifier.size(32.dp),
-          painter = painterResource(R.drawable.ic_capture),
-          tint = MaterialTheme.colorScheme.tertiary,
-          contentDescription = "Capture"
-        )
+      if (LocalInspectionMode.current) {
+        Box(
+          modifier = Modifier
+            .size(80.dp)
+            .clip(CircleShape)
+            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+            .clickable {},
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            modifier = Modifier.size(32.dp),
+            painter = painterResource(R.drawable.ic_capture),
+            tint = MaterialTheme.colorScheme.tertiary,
+            contentDescription = "Capture"
+          )
+        }
+      } else {
+        val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+        Box(
+          modifier = Modifier
+            .size(80.dp)
+            .clip(CircleShape)
+            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+            .clickable {
+              if (cameraPermissionState.status.isGranted) {
+                navigate(DailyLogFeature.Location.Camera)
+              } else {
+                cameraPermissionState.launchPermissionRequest()
+              }
+            },
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            modifier = Modifier.size(32.dp),
+            painter = painterResource(R.drawable.ic_capture),
+            tint = MaterialTheme.colorScheme.tertiary,
+            contentDescription = "Capture"
+          )
+        }
       }
-
     }
   ) { paddingValues ->
     Surface(
@@ -184,7 +155,7 @@ fun DailyLogScreen(
           item {
             Spacer(modifier = Modifier.height(0.dp))
           }
-          itemsIndexed(items = state.logs, key = { _, item -> item.id }) { index, log ->
+          items(items = state.logs, key = { it.id }) { log ->
             DailyLogRow3(
               modifier = Modifier
                 .animateItem()
@@ -195,10 +166,88 @@ fun DailyLogScreen(
             )
           }
           item {
-            Spacer(modifier = Modifier.height(80.dp).windowInsetsPadding(WindowInsets.navigationBars))
+            Spacer(
+              modifier = Modifier
+                .height(80.dp)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+            )
           }
         }
       }
+    }
+  }
+}
+
+@Preview
+@Composable
+private fun PicalTopBarPreview() {
+  CalorieSnapTheme {
+    PicalTopBar(
+      state = DailyLogFeature.State(
+        logs = listOf(
+          MealLog(id = 0, foodTitle = "Item One", valid = true),
+          MealLog(id = 1, foodTitle = "Item Two", valid = true),
+          MealLog(id = 2, foodTitle = "Item Three", valid = true),
+          MealLog(id = 3, foodTitle = "Item Four", valid = true),
+          MealLog(id = 4, foodTitle = "Item Five", valid = true),
+        )
+      ),
+      navigate = {}
+    )
+  }
+}
+
+@Composable
+private fun PicalTopBar(
+  state: DailyLogFeature.State,
+  navigate: (DailyLogFeature.Location) -> Unit
+) {
+  Row(
+    modifier = Modifier
+      .windowInsetsPadding(insets = WindowInsets.statusBars)
+      .fillMaxWidth()
+      .padding(16.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween
+  ) {
+    Box(
+      modifier = Modifier
+        .clip(CircleShape)
+        .background(color = MaterialTheme.colorScheme.primaryContainer)
+        .clickable { navigate(DailyLogFeature.Location.History) }
+        .padding(12.dp)
+    ) {
+      Icon(
+        painter = painterResource(R.drawable.ic_history),
+        tint = MaterialTheme.colorScheme.secondary,
+        contentDescription = ""
+      )
+    }
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+      Text(
+        text = "TODAY",
+        color = MaterialTheme.colorScheme.onSurface,
+        style = MaterialTheme.typography.displaySmall
+      )
+      Text(
+        text = "${state.caloriesForDay} cal",
+        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.displayLarge
+      )
+    }
+    Box(
+      modifier = Modifier
+        .clip(CircleShape)
+        .background(color = MaterialTheme.colorScheme.primaryContainer)
+        .padding(12.dp)
+    ) {
+      Icon(
+        painter = painterResource(R.drawable.ic_settings),
+        tint = MaterialTheme.colorScheme.secondary,
+        contentDescription = ""
+      )
     }
   }
 }
