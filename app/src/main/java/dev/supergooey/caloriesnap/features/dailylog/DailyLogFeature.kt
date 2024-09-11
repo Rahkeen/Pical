@@ -16,7 +16,9 @@ import java.time.LocalDate
 interface DailyLogFeature {
   data class State(
     val logs: List<MealLog>
-  )
+  ) {
+    val caloriesForDay = logs.sumOf { it.totalCalories }
+  }
 
   sealed class Location(val route: String) {
     data object Camera : Location("camera")

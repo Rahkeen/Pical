@@ -31,7 +31,12 @@ val Typography = Typography(
     fontFamily = plex,
     fontWeight = FontWeight.Medium,
     fontSize = 18.sp
-  )
+  ),
+  displayLarge = TextStyle(
+    fontFamily = plex,
+    fontWeight = FontWeight.Bold,
+    fontSize = 22.sp
+  ),
   /* Other default text styles to override
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,

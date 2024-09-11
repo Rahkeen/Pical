@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -33,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,6 +64,25 @@ import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 
+@Preview
+@Composable
+private fun DailyLogScreenPreview() {
+  CalorieSnapTheme {
+    DailyLogScreen(
+      state = DailyLogFeature.State(
+        listOf(
+          MealLog(foodTitle = "Item One", valid = true),
+          MealLog(foodTitle = "Item Two", valid = true),
+          MealLog(foodTitle = "Item Three", valid = true),
+          MealLog(foodTitle = "Item Four", valid = true),
+          MealLog(foodTitle = "Item Five", valid = true),
+        )
+      ),
+      navigate = {}
+    )
+  }
+}
+
 @Composable
 fun DailyLogScreen(
   state: DailyLogFeature.State,
@@ -67,30 +90,62 @@ fun DailyLogScreen(
 ) {
   val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
 
-  Scaffold { paddingValues ->
-    LazyColumn(
-      modifier = Modifier
-        .fillMaxSize()
-        .background(color = MaterialTheme.colorScheme.background)
-        .padding(horizontal = 8.dp),
-      contentPadding = paddingValues,
-      verticalArrangement = Arrangement.spacedBy(8.dp)
+  Scaffold(
+    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+    topBar = {
+      Row(
+        modifier = Modifier
+          .windowInsetsPadding(insets = WindowInsets.statusBars)
+          .fillMaxWidth()
+          .height(80.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+      ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Text(
+            text = "Today",
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.displayLarge
+          )
+          Text(
+            text = "${state.caloriesForDay} cal",
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium,
+            fontSize = 12.sp
+          )
+        }
+      }
+    }
+  ) { paddingValues ->
+    Surface(
+      modifier = Modifier.padding(paddingValues),
+      shape = RoundedCornerShape(
+        topStart = 28.dp,
+        topEnd = 28.dp
+      )
     ) {
-      item {
-        Spacer(modifier = Modifier.height(16.dp))
-      }
-      itemsIndexed(items = state.logs, key = { _, item -> item.id }) { index, log ->
-        DailyLogRow3(
-          modifier = Modifier
-            .animateItem()
-            .fillMaxWidth()
-            .wrapContentHeight(),
-          log = log,
-          onClick = { navigate(DailyLogFeature.Location.Log(log.id)) }
-        )
-      }
-      item {
-        Spacer(modifier = Modifier.height(16.dp))
+      LazyColumn(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        item {
+          Spacer(modifier = Modifier.height(0.dp))
+        }
+        itemsIndexed(items = state.logs, key = { _, item -> item.id }) { index, log ->
+          DailyLogRow3(
+            modifier = Modifier
+              .animateItem()
+              .fillMaxWidth()
+              .wrapContentHeight(),
+            log = log,
+            onClick = { navigate(DailyLogFeature.Location.Log(log.id)) }
+          )
+        }
+        item {
+          Spacer(modifier = Modifier.height(16.dp))
+        }
       }
     }
   }
@@ -354,8 +409,8 @@ private fun DailyLogRow3(
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .height(80.dp)
-      .clip(RoundedCornerShape(12.dp))
+      .height(100.dp)
+      .clip(RoundedCornerShape(20.dp))
       .background(MaterialTheme.colorScheme.surfaceContainer)
       .clickable(
         indication = ripple(color = MaterialTheme.colorScheme.primary),
@@ -370,7 +425,7 @@ private fun DailyLogRow3(
         modifier = Modifier
           .fillMaxHeight()
           .aspectRatio(1f, matchHeightConstraintsFirst = true)
-          .clip(RoundedCornerShape(8.dp)),
+          .clip(RoundedCornerShape(12.dp)),
         painter = painterResource(R.drawable.bibimbap),
         contentScale = ContentScale.Crop,
         contentDescription = "food"
@@ -380,7 +435,7 @@ private fun DailyLogRow3(
         modifier = Modifier
           .fillMaxHeight()
           .aspectRatio(1f, matchHeightConstraintsFirst = true)
-          .clip(RoundedCornerShape(8.dp)),
+          .clip(RoundedCornerShape(12.dp)),
         model = log.imageUri,
         contentScale = ContentScale.Crop,
         contentDescription = "food"
