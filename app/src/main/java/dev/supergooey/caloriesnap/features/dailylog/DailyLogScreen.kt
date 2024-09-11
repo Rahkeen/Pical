@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -35,11 +36,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -51,7 +48,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
@@ -67,8 +63,8 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.circle
 import coil.compose.AsyncImage
+import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import dev.supergooey.caloriesnap.CameraFeature
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
@@ -98,7 +94,6 @@ fun DailyLogScreen(
   state: DailyLogFeature.State,
   navigate: (DailyLogFeature.Location) -> Unit
 ) {
-  val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
 
   Scaffold(
     containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
@@ -107,8 +102,7 @@ fun DailyLogScreen(
         modifier = Modifier
           .windowInsetsPadding(insets = WindowInsets.statusBars)
           .fillMaxWidth()
-          .height(80.dp)
-          .padding(16.dp),
+          .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
@@ -148,33 +142,30 @@ fun DailyLogScreen(
         }
       }
     },
-    bottomBar = {
-      Row(
+    floatingActionButton = {
+      val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+      Box(
         modifier = Modifier
-          .graphicsLayer { clip = false }
-          .windowInsetsPadding(WindowInsets.navigationBars)
-          .fillMaxWidth()
-          .height(60.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.Top
+          .size(80.dp)
+          .clip(CircleShape)
+          .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+          .clickable {
+            if (cameraPermissionState.status.isGranted) {
+              navigate(DailyLogFeature.Location.Camera)
+            } else {
+              cameraPermissionState.launchPermissionRequest()
+            }
+          },
+        contentAlignment = Alignment.Center
       ) {
-        Box(
-          modifier = Modifier
-            .requiredSize(80.dp)
-            .offset { IntOffset(x = 0, y = -(20.dp).roundToPx()) }
-            .clip(CircleShape)
-            .background(color = MaterialTheme.colorScheme.primaryContainer)
-            .clickable { navigate(DailyLogFeature.Location.Camera) },
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            modifier = Modifier.size(32.dp),
-            painter = painterResource(R.drawable.ic_capture),
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            contentDescription = "Capture"
-          )
-        }
+        Icon(
+          modifier = Modifier.size(32.dp),
+          painter = painterResource(R.drawable.ic_capture),
+          tint = MaterialTheme.colorScheme.tertiary,
+          contentDescription = "Capture"
+        )
       }
+
     }
   ) { paddingValues ->
     Surface(
@@ -204,7 +195,7 @@ fun DailyLogScreen(
             )
           }
           item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(80.dp).windowInsetsPadding(WindowInsets.navigationBars))
           }
         }
       }
@@ -474,7 +465,7 @@ private fun DailyLogRow3(
       .clip(RoundedCornerShape(20.dp))
       .background(MaterialTheme.colorScheme.surfaceContainer)
       .clickable(
-        indication = ripple(color = MaterialTheme.colorScheme.tertiaryContainer),
+        indication = ripple(color = MaterialTheme.colorScheme.secondaryContainer),
         interactionSource = interactionSource
       ) { onClick() }
       .padding(8.dp),
@@ -538,14 +529,16 @@ private fun DailyLogRow3(
     )
     Box(
       modifier = Modifier
-        .size(48.dp)
+        .align(Alignment.Bottom)
+        .size(36.dp)
         .clip(shape = MorphPolygonShape(morph, progress))
-        .background(color = MaterialTheme.colorScheme.tertiaryContainer),
+        .background(color = MaterialTheme.colorScheme.secondaryContainer),
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        modifier = Modifier.size(24.dp),
+        modifier = Modifier.size(16.dp),
         painter = painterResource(R.drawable.ic_edit),
+        tint = MaterialTheme.colorScheme.secondary,
         contentDescription = "Edit"
       )
     }
