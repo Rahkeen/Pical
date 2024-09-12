@@ -54,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -65,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.CornerRounding
@@ -77,6 +79,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 import kotlinx.coroutines.launch
 
@@ -501,7 +504,7 @@ private fun DailyLogRow2(
   }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun DailyLogRowPreview3() {
   CalorieSnapTheme {
@@ -529,9 +532,7 @@ private fun DailyLogRow3(
   val dragOffset = remember { Animatable(0f) }
   var trigger by remember { mutableStateOf(false) }
   var progress by remember { mutableStateOf(0f) }
-  val color by animateColorAsState(
-    targetValue = if (trigger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-  )
+  val color = if (trigger) CoolRed else Color.White.copy(alpha = 0.7f)
   LaunchedEffect(trigger) {
     if (trigger) {
       haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -542,7 +543,7 @@ private fun DailyLogRow3(
       .fillMaxWidth()
       .height(100.dp)
       .clip(RoundedCornerShape(20.dp))
-      .background(color = MaterialTheme.colorScheme.errorContainer)
+      .background(color = CoolRed.copy(alpha = 0.3f))
   ) {
     Box(
       modifier = Modifier
@@ -558,7 +559,7 @@ private fun DailyLogRow3(
             scaleY = outputScale
           }
           .size(32.dp),
-        painter = painterResource(R.drawable.ic_trash),
+        painter = painterResource(R.drawable.ic_trash_filled),
         tint = color,
         contentDescription = "Delete"
       )
@@ -591,7 +592,7 @@ private fun DailyLogRow3(
                   0f,
                   animationSpec = spring(
                     stiffness = Spring.StiffnessLow,
-                    dampingRatio = Spring.DampingRatioMediumBouncy
+                    dampingRatio = 0.8f
                   )
                 )
               }
@@ -639,6 +640,7 @@ private fun DailyLogRow3(
           maxLines = 2,
           overflow = TextOverflow.Ellipsis,
           style = MaterialTheme.typography.displayMedium,
+          color = MaterialTheme.colorScheme.onSurface,
           fontSize = 14.sp,
         )
         Text(
