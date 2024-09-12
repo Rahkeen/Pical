@@ -1,7 +1,8 @@
 package dev.supergooey.caloriesnap.features.dailylog
 
-import android.util.Log
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutQuint
 import androidx.compose.animation.core.Spring
@@ -87,25 +88,33 @@ import kotlinx.coroutines.launch
 @Composable
 private fun DailyLogScreenPreview() {
   CalorieSnapTheme {
-    DailyLogScreen(
-      state = DailyLogFeature.State(
-        listOf(
-          MealLog(id = 0, foodTitle = "Item One", valid = true),
-          MealLog(id = 1, foodTitle = "Item Two", valid = true),
-          MealLog(id = 2, foodTitle = "Item Three", valid = true),
-          MealLog(id = 3, foodTitle = "Item Four", valid = true),
-          MealLog(id = 4, foodTitle = "Item Five", valid = true),
-        )
-      ),
-      action = {},
-      navigate = {}
-    )
+    SharedTransitionScope {
+     AnimatedContent(targetState = true) { state ->
+       DailyLogScreen(
+         state = DailyLogFeature.State(
+           listOf(
+             MealLog(id = 0, foodTitle = "Item One", valid = true),
+             MealLog(id = 1, foodTitle = "Item Two", valid = true),
+             MealLog(id = 2, foodTitle = "Item Three", valid = true),
+             MealLog(id = 3, foodTitle = "Item Four", valid = true),
+             MealLog(id = 4, foodTitle = "Item Five", valid = true),
+           )
+         ),
+         sharedTransitionScope = this@SharedTransitionScope,
+         animatedVisibilityScope = this@AnimatedContent,
+         action = {},
+         navigate = {}
+       )
+     }
+    }
   }
 }
 
 @Composable
 fun DailyLogScreen(
   state: DailyLogFeature.State,
+  sharedTransitionScope: SharedTransitionScope,
+  animatedVisibilityScope: AnimatedVisibilityScope,
   action: (DailyLogFeature.Action) -> Unit,
   navigate: (DailyLogFeature.Location) -> Unit
 ) {
@@ -519,9 +528,10 @@ private fun DailyLogRowPreview3() {
 }
 
 @Composable
-private fun DailyLogRow3(
+fun DailyLogRow3(
   modifier: Modifier = Modifier,
   log: MealLog,
+  showEdit: Boolean = true,
   onClick: () -> Unit = {},
   onDelete: () -> Unit = {},
 ) {
@@ -597,7 +607,7 @@ private fun DailyLogRow3(
                 )
               }
             },
-            onHorizontalDrag = { change, dragAmount ->
+            onHorizontalDrag = { _, dragAmount ->
               scope.launch {
                 val update = dragOffset.value + dragAmount
                 if (update > 0) {
@@ -653,33 +663,35 @@ private fun DailyLogRow3(
         )
       }
 
-      val start = remember { RoundedPolygon.circle(numVertices = 6) }
-      val end = remember {
-        RoundedPolygon(
-          numVertices = 6,
-          rounding = CornerRounding(0.3f, smoothing = 1.0f)
+      if (showEdit) {
+        val start = remember { RoundedPolygon.circle(numVertices = 6) }
+        val end = remember {
+          RoundedPolygon(
+            numVertices = 6,
+            rounding = CornerRounding(0.3f, smoothing = 1.0f)
+          )
+        }
+        val morph = remember { Morph(start, end) }
+        val morphProgress by animateFloatAsState(
+          targetValue = if (pressed) 1f else 0f,
+          animationSpec = spring(),
+          label = "edit_shape"
         )
-      }
-      val morph = remember { Morph(start, end) }
-      val morphProgress by animateFloatAsState(
-        targetValue = if (pressed) 1f else 0f,
-        animationSpec = spring(),
-        label = "edit_shape"
-      )
-      Box(
-        modifier = Modifier
-          .align(Alignment.Bottom)
-          .size(36.dp)
-          .clip(shape = MorphPolygonShape(morph, morphProgress))
-          .background(color = MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center
-      ) {
-        Icon(
-          modifier = Modifier.size(16.dp),
-          painter = painterResource(R.drawable.ic_edit),
-          tint = MaterialTheme.colorScheme.secondary,
-          contentDescription = "Edit"
-        )
+        Box(
+          modifier = Modifier
+            .align(Alignment.Bottom)
+            .size(36.dp)
+            .clip(shape = MorphPolygonShape(morph, morphProgress))
+            .background(color = MaterialTheme.colorScheme.secondaryContainer),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            modifier = Modifier.size(16.dp),
+            painter = painterResource(R.drawable.ic_edit),
+            tint = MaterialTheme.colorScheme.secondary,
+            contentDescription = "Edit"
+          )
+        }
       }
     }
   }

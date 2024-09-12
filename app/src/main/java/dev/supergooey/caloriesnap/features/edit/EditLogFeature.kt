@@ -11,11 +11,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class CalorieDisplay(
+  val text: String = "0",
+) {
+  val backing = text.toIntOrNull()
+  val error = backing == null || backing < 0
+}
 interface EditLogFeature {
   data class State(
+    val id: Int = -1,
     val title: String = "",
-    val calories: Int = 0,
-    val description: String = "",
+    val calories: CalorieDisplay = CalorieDisplay(),
     val imageUri: String? = null,
     val canSave: Boolean = false,
     val finished: Boolean = false
@@ -23,7 +29,7 @@ interface EditLogFeature {
 
   sealed interface Action {
     data class EditTitle(val title: String) : Action
-    data class EditCalories(val calories: Int) : Action
+    data class EditCalories(val calories: String) : Action
     data object Save : Action
   }
 
@@ -36,7 +42,7 @@ class EditLogViewModel(
   private val logId: Int,
   private val logDatabase: MealLogDatabase
 ) : ViewModel() {
-  private val internalState = MutableStateFlow(EditLogFeature.State())
+  private val internalState = MutableStateFlow(EditLogFeature.State(id = logId))
   val state = internalState.asStateFlow()
   private var previous: MealLog? = null
 
@@ -47,8 +53,7 @@ class EditLogViewModel(
       internalState.update {
         it.copy(
           title = log.foodTitle ?: "",
-          calories = log.totalCalories,
-          description = log.foodDescription ?: "",
+          calories = CalorieDisplay(text = log.totalCalories.toString()),
           imageUri = log.imageUri
         )
       }
@@ -58,10 +63,12 @@ class EditLogViewModel(
   fun actions(action: EditLogFeature.Action) {
     when (action) {
       is EditLogFeature.Action.EditCalories -> {
+        val newDisplay = CalorieDisplay(action.calories)
+        val canSave = !newDisplay.error && newDisplay.backing != previous?.totalCalories
         internalState.update { prev ->
           prev.copy(
-            calories = action.calories,
-            canSave = previous != null && action.calories != previous!!.totalCalories
+            calories = newDisplay,
+            canSave = previous != null && canSave
           )
         }
       }
@@ -80,7 +87,7 @@ class EditLogViewModel(
           viewModelScope.launch(Dispatchers.IO) {
             val updatedLog = log.copy(
               foodTitle = state.value.title,
-              totalCalories = state.value.calories
+              totalCalories = state.value.calories.backing!!
             )
             logDatabase.mealLogDao().updateMealLog(updatedLog)
             internalState.update { it.copy(finished = true) }

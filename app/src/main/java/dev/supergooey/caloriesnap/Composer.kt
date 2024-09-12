@@ -123,7 +123,7 @@ private fun InnerTextField(
 }
 
 @Composable
-private fun WithTextStyle(
+fun WithTextStyle(
   style: TextStyle,
   color: Color = LocalContentColor.current,
   content: @Composable () -> Unit

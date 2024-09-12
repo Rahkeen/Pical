@@ -42,6 +42,10 @@ data class MealLog(
   @ColumnInfo("valid") val valid: Boolean
 )
 
+fun testMealLog(id: Int = 0, title: String = "Cool Beans"): MealLog {
+  return MealLog(id = id, foodTitle = title, valid = true)
+}
+
 data class MealLogsByDay(
   @Embedded val day: MealDay,
   @Relation(
