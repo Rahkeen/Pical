@@ -34,7 +34,7 @@ val Typography = Typography(
   displayMedium = TextStyle(
     fontFamily = plex,
     fontWeight = FontWeight.Medium,
-    fontSize = 18.sp
+    fontSize = 14.sp
   ),
   displayLarge = TextStyle(
     fontFamily = plex,
