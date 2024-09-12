@@ -4,13 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +23,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dev.supergooey.caloriesnap.features.dailylog.DailyLogScreen
 import dev.supergooey.caloriesnap.features.dailylog.DailyLogViewModel
+import dev.supergooey.caloriesnap.features.edit.EditLogFeature
+import dev.supergooey.caloriesnap.features.edit.EditLogScreen
+import dev.supergooey.caloriesnap.features.edit.EditLogViewModel
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 
 class MainActivity : ComponentActivity() {
@@ -92,19 +90,19 @@ fun App() {
       )
     ) { backStackEntry ->
       val id = backStackEntry.arguments?.getInt("logId")!!
-      val model = viewModel<FoodEntryViewModel>(
-        factory = FoodEntryViewModel.Factory(
+      val model = viewModel<EditLogViewModel>(
+        factory = EditLogViewModel.Factory(
           logId = id,
           logDatabase = MealLogDatabase.getDatabase(context)
         )
       )
       val state by model.state.collectAsState()
-      FoodEntryScreen(
+      EditLogScreen(
         state = state,
         actions = model::actions,
         navigate = { location ->
           when (location) {
-            FoodEntryFeature.Location.Back -> {
+            EditLogFeature.Location.Back -> {
               navController.popBackStack()
             }
           }
