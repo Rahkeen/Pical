@@ -1,5 +1,10 @@
 package dev.supergooey.caloriesnap.features.edit
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,11 +16,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,9 +39,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -64,8 +76,11 @@ fun EditLogScreen(
   navigate: (EditLogFeature.Location) -> Unit
 ) {
 
+  val keyboardController = LocalSoftwareKeyboardController.current
+
   LaunchedEffect(state.finished) {
     if (state.finished) {
+      keyboardController?.hide()
       navigate(EditLogFeature.Location.Back)
     }
   }
@@ -74,9 +89,10 @@ fun EditLogScreen(
     Surface(modifier = Modifier.padding(paddingValues)) {
       Column(
         modifier = Modifier
+          .imePadding()
           .fillMaxSize()
           .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
       ) {
         Row(
           modifier = Modifier
@@ -118,14 +134,22 @@ fun EditLogScreen(
                 modifier = Modifier.wrapContentSize(),
                 value = state.title,
                 onValueChanged = { actions(EditLogFeature.Action.EditTitle(it)) },
-                hint = "Sarcastic Food Title"
+                hint = "Sarcastic Food Title",
+                readOnly = state.finished
               )
             }
             WithTextStyle(
               style = MaterialTheme.typography.displayMedium.copy(fontSize = 12.sp),
-              color = if (state.calories.error) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary
+              color = if (state.calories.error) {
+                MaterialTheme.colorScheme.onErrorContainer
+              } else {
+                MaterialTheme.colorScheme.primary
+              }
             ) {
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+              ) {
                 LogEditField(
                   modifier = Modifier.wrapContentSize(),
                   value = state.calories.text,
@@ -136,11 +160,41 @@ fun EditLogScreen(
                     keyboardType = KeyboardType.Number
                   ),
                   hint = "100",
+                  maxLines = 1,
+                  readOnly = state.finished,
                   error = state.calories.error
                 )
                 Text(text = "cal")
               }
             }
+          }
+        }
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RectangleShape),
+          horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+        ) {
+          Button(
+            enabled = state.canSave,
+            onClick = { actions(EditLogFeature.Action.Save) },
+            colors = ButtonDefaults.buttonColors(
+              containerColor = MaterialTheme.colorScheme.primaryContainer,
+              contentColor = MaterialTheme.colorScheme.primary,
+              disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+              disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            )
+          ) {
+            Text("Save")
+          }
+          Button(
+            onClick = { actions(EditLogFeature.Action.Cancel) },
+            colors = ButtonDefaults.buttonColors(
+              containerColor = MaterialTheme.colorScheme.surfaceContainer,
+              contentColor = MaterialTheme.colorScheme.onSurface
+            )
+          ) {
+            Text("Cancel")
           }
         }
       }
@@ -176,7 +230,9 @@ private fun LogEditField(
   onValueChanged: (String) -> Unit,
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
   hint: String = "",
-  error: Boolean = false
+  maxLines: Int = 2,
+  error: Boolean = false,
+  readOnly: Boolean = false,
 ) {
   Surface(
     modifier = modifier.wrapContentSize(),
@@ -200,7 +256,8 @@ private fun LogEditField(
         onValueChange = onValueChanged,
         textStyle = LocalTextStyle.current,
         keyboardOptions = keyboardOptions,
-        maxLines = 2,
+        maxLines = maxLines,
+        readOnly = readOnly,
         cursorBrush = SolidColor(value = MaterialTheme.colorScheme.onSurface)
       )
     }

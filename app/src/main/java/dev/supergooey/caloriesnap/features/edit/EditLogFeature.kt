@@ -31,6 +31,7 @@ interface EditLogFeature {
     data class EditTitle(val title: String) : Action
     data class EditCalories(val calories: String) : Action
     data object Save : Action
+    data object Cancel : Action
   }
 
   sealed interface Location {
@@ -93,6 +94,10 @@ class EditLogViewModel(
             internalState.update { it.copy(finished = true) }
           }
         }
+      }
+
+      EditLogFeature.Action.Cancel -> {
+        internalState.update { it.copy(finished = true) }
       }
     }
   }
