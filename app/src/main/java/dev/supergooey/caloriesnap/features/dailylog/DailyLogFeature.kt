@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 interface DailyLogFeature {
@@ -18,6 +19,10 @@ interface DailyLogFeature {
     val logs: List<MealLog>
   ) {
     val caloriesForDay = logs.sumOf { it.totalCalories }
+  }
+
+  sealed interface Action {
+    data class DeleteItem(val log: MealLog): Action
   }
 
   sealed class Location(val route: String) {
@@ -28,7 +33,7 @@ interface DailyLogFeature {
 }
 
 class DailyLogViewModel(
-  logStore: MealLogDatabase
+  private val logStore: MealLogDatabase
 ) : ViewModel() {
   private val internalState = MutableStateFlow(DailyLogFeature.State(logs = emptyList()))
   private val today = LocalDate.now()
@@ -40,6 +45,16 @@ class DailyLogViewModel(
     started = SharingStarted.WhileSubscribed(),
     initialValue = DailyLogFeature.State(emptyList())
   )
+
+  fun actions(action: DailyLogFeature.Action) {
+    when(action) {
+      is DailyLogFeature.Action.DeleteItem -> {
+        viewModelScope.launch {
+          logStore.mealLogDao().deleteMealLog(action.log)
+        }
+      }
+    }
+  }
 
   @Suppress("UNCHECKED_CAST")
   class Factory(private val logStore: MealLogDatabase) : ViewModelProvider.Factory {

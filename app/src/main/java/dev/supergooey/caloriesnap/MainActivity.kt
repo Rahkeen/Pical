@@ -62,7 +62,7 @@ fun App() {
       )
       val state by model.state.collectAsState()
 
-      DailyLogScreen(state = state) { location ->
+      DailyLogScreen(state = state, action = model::actions) { location ->
         navController.navigate(location.route)
       }
     }

@@ -45,6 +45,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,10 +54,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +77,6 @@ import com.google.accompanist.permissions.rememberPermissionState
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
-import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 import kotlinx.coroutines.launch
 
@@ -93,6 +94,7 @@ private fun DailyLogScreenPreview() {
           MealLog(id = 4, foodTitle = "Item Five", valid = true),
         )
       ),
+      action = {},
       navigate = {}
     )
   }
@@ -101,6 +103,7 @@ private fun DailyLogScreenPreview() {
 @Composable
 fun DailyLogScreen(
   state: DailyLogFeature.State,
+  action: (DailyLogFeature.Action) -> Unit,
   navigate: (DailyLogFeature.Location) -> Unit
 ) {
   Scaffold(
@@ -175,7 +178,7 @@ fun DailyLogScreen(
                 .wrapContentHeight(),
               log = log,
               onClick = { navigate(DailyLogFeature.Location.Log(log.id)) },
-              onDelete = { Log.d("Daily Log", "Deleted Item: ${log.foodTitle}") }
+              onDelete = { action(DailyLogFeature.Action.DeleteItem(log)) }
             )
           }
           item {
@@ -519,6 +522,7 @@ private fun DailyLogRow3(
   onClick: () -> Unit = {},
   onDelete: () -> Unit = {},
 ) {
+  val haptics = LocalHapticFeedback.current
   val scope = rememberCoroutineScope()
   val interactionSource = remember { MutableInteractionSource() }
   val pressed by interactionSource.collectIsPressedAsState()
@@ -528,17 +532,22 @@ private fun DailyLogRow3(
   val color by animateColorAsState(
     targetValue = if (trigger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
   )
+  LaunchedEffect(trigger) {
+    if (trigger) {
+      haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
+  }
   Box(
     modifier = modifier
       .fillMaxWidth()
       .height(100.dp)
+      .clip(RoundedCornerShape(20.dp))
+      .background(color = MaterialTheme.colorScheme.errorContainer)
   ) {
     Box(
       modifier = Modifier
         .fillMaxWidth(0.25f)
-        .fillMaxHeight()
-        .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
-        .background(color = MaterialTheme.colorScheme.errorContainer),
+        .fillMaxHeight(),
       contentAlignment = Alignment.Center
     ) {
       Icon(
@@ -650,7 +659,7 @@ private fun DailyLogRow3(
         )
       }
       val morph = remember { Morph(start, end) }
-      val progress by animateFloatAsState(
+      val morphProgress by animateFloatAsState(
         targetValue = if (pressed) 1f else 0f,
         animationSpec = spring(),
         label = "edit_shape"
@@ -659,7 +668,7 @@ private fun DailyLogRow3(
         modifier = Modifier
           .align(Alignment.Bottom)
           .size(36.dp)
-          .clip(shape = MorphPolygonShape(morph, progress))
+          .clip(shape = MorphPolygonShape(morph, morphProgress))
           .background(color = MaterialTheme.colorScheme.secondaryContainer),
         contentAlignment = Alignment.Center
       ) {
