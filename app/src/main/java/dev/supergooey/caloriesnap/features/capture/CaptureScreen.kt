@@ -280,7 +280,7 @@ fun CaptureScreen(
                     label = ""
                   )
                   val buttonColor by animateColorAsState(
-                    targetValue = if (isPressed) CoolOrange else CoolRed,
+                    targetValue = if (isPressed) MaterialTheme.colorScheme.primary else CoolRed,
                     animationSpec = spring(),
                     label = ""
                   )
