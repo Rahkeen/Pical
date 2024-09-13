@@ -29,8 +29,11 @@ interface LogHistoryFeature {
     val rows: List<HistoryRowState> = emptyList()
   )
 
-  sealed class Location(val route: String) {
-    data class Logs(val date: String): Location(route ="logs?date=$date")
+  sealed interface Location {
+    data object Back: Location
+    data class Logs(val date: String): Location {
+      val route = "logs?date=$date"
+    }
   }
 }
 

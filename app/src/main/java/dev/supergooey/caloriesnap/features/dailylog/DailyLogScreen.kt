@@ -2,7 +2,6 @@ package dev.supergooey.caloriesnap.features.dailylog
 
 import android.Manifest
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable

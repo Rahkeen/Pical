@@ -119,7 +119,11 @@ fun LogHistoryScreen(
       ) {
         items(items = state.rows) { row ->
           HistoryScreenRow(row) {
-            navigate(LogHistoryFeature.Location.Logs(row.date.toString()))
+            if (row.isToday) {
+              navigate(LogHistoryFeature.Location.Back)
+            } else {
+              navigate(LogHistoryFeature.Location.Logs(row.date.toString()))
+            }
           }
         }
       }

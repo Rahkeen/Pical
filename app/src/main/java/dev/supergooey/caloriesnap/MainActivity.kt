@@ -30,6 +30,7 @@ import dev.supergooey.caloriesnap.features.dailylog.DailyLogViewModel
 import dev.supergooey.caloriesnap.features.edit.EditLogFeature
 import dev.supergooey.caloriesnap.features.edit.EditLogScreen
 import dev.supergooey.caloriesnap.features.edit.EditLogViewModel
+import dev.supergooey.caloriesnap.features.history.LogHistoryFeature
 import dev.supergooey.caloriesnap.features.history.LogHistoryScreen
 import dev.supergooey.caloriesnap.features.history.LogHistoryViewModel
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
@@ -149,8 +150,16 @@ fun App() {
           )
         )
         val state by model.state.collectAsState()
-        LogHistoryScreen(state) {
-          navController.navigate(it.route)
+        LogHistoryScreen(state) { location ->
+          when(location) {
+            LogHistoryFeature.Location.Back -> {
+              navController.popBackStack()
+            }
+            is LogHistoryFeature.Location.Logs -> {
+              navController.navigate(location.route)
+            }
+          }
+
         }
       }
     }
