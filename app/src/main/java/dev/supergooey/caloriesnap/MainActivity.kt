@@ -27,7 +27,10 @@ import dev.supergooey.caloriesnap.features.dailylog.DailyLogViewModel
 import dev.supergooey.caloriesnap.features.edit.EditLogFeature
 import dev.supergooey.caloriesnap.features.edit.EditLogScreen
 import dev.supergooey.caloriesnap.features.edit.EditLogViewModel
+import dev.supergooey.caloriesnap.features.history.LogHistoryScreen
+import dev.supergooey.caloriesnap.features.history.LogHistoryViewModel
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,11 +55,26 @@ fun App() {
         .fillMaxSize()
         .background(color = MaterialTheme.colorScheme.background),
       navController = navController,
-      startDestination = "home",
+      startDestination = "logs",
     ) {
-      composable("home") {
+      composable(
+        route = "logs?date={date}",
+        arguments = listOf(
+          navArgument("date") {
+            type = NavType.StringType
+            nullable = true
+          }
+        )
+      ) { backStackEntry ->
+        val dateString = backStackEntry.arguments?.getString("date")
+        val date = if (dateString.isNullOrEmpty()) {
+          LocalDate.now()
+        } else {
+          LocalDate.parse(dateString)
+        }
         val model = viewModel<DailyLogViewModel>(
           factory = DailyLogViewModel.Factory(
+            date = date,
             logStore = MealLogDatabase.getDatabase(context)
           )
         )
@@ -117,13 +135,15 @@ fun App() {
         )
       }
       composable("history") {
-        val model = viewModel<HistoryViewModel>(
-          factory = HistoryViewModel.Factory(
+        val model = viewModel<LogHistoryViewModel>(
+          factory = LogHistoryViewModel.Factory(
             logDao = MealLogDatabase.getDatabase(context).mealLogDao()
           )
         )
         val state by model.state.collectAsState()
-        HistoryScreen(state)
+        LogHistoryScreen(state) {
+          navController.navigate(it.route)
+        }
       }
     }
   }
