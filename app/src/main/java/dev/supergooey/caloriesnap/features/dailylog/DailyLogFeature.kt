@@ -14,18 +14,18 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import kotlin.math.log
 
 interface DailyLogFeature {
   data class State(
     val dayDisplay: String,
-    val logs: List<MealLog>
+    val isToday: Boolean,
+    val logs: List<MealLog>,
   ) {
     val caloriesForDay = logs.sumOf { it.totalCalories }
   }
 
   sealed interface Action {
-    data class DeleteItem(val log: MealLog): Action
+    data class DeleteItem(val log: MealLog) : Action
   }
 
   sealed class Location(val route: String) {
@@ -40,18 +40,29 @@ class DailyLogViewModel(
   private val logStore: MealLogDatabase
 ) : ViewModel() {
   private val dayDisplay = date.toDisplay()
-  private val internalState = MutableStateFlow(DailyLogFeature.State(dayDisplay = dayDisplay, logs = emptyList()))
+  private val isToday = date.isToday()
+  private val internalState = MutableStateFlow(
+    DailyLogFeature.State(
+      dayDisplay = dayDisplay,
+      isToday = isToday,
+      logs = emptyList()
+    )
+  )
   private val logsFlow = logStore.mealLogDao().getMealLogsByDay(date).filterNotNull()
   val state = combine(internalState.asStateFlow(), logsFlow) { state, logsByDay ->
     state.copy(logs = logsByDay.logs)
   }.stateIn(
     scope = viewModelScope,
     started = SharingStarted.WhileSubscribed(),
-    initialValue = DailyLogFeature.State(dayDisplay = dayDisplay, logs = emptyList())
+    initialValue = DailyLogFeature.State(
+      dayDisplay = dayDisplay,
+      isToday = isToday,
+      logs = emptyList()
+    )
   )
 
   fun actions(action: DailyLogFeature.Action) {
-    when(action) {
+    when (action) {
       is DailyLogFeature.Action.DeleteItem -> {
         viewModelScope.launch {
           logStore.mealLogDao().deleteMealLog(action.log)
@@ -61,7 +72,8 @@ class DailyLogViewModel(
   }
 
   @Suppress("UNCHECKED_CAST")
-  class Factory(private val date: LocalDate, private val logStore: MealLogDatabase) : ViewModelProvider.Factory {
+  class Factory(private val date: LocalDate, private val logStore: MealLogDatabase) :
+    ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
       return DailyLogViewModel(date, logStore) as T
     }

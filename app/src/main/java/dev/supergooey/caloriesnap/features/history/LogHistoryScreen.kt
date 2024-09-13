@@ -31,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -41,12 +42,59 @@ import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import java.time.LocalDate
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun LogHistoryScreenPreview() {
   CalorieSnapTheme {
     LogHistoryScreen(
-      state = LogHistoryFeature.State(),
+      state = LogHistoryFeature.State(
+        rows = listOf(
+          HistoryRowState(
+            dayDisplay = "Today",
+            dayCalories = 2000,
+            isToday = true,
+            date = LocalDate.of(2024, 9, 13),
+            logs = listOf(
+              MealLog(id = 0, valid = true),
+              MealLog(id = 1, valid = true),
+              MealLog(id = 2, valid = true),
+            )
+          ),
+          HistoryRowState(
+            dayDisplay = "October 5, 2023",
+            dayCalories = 2000,
+            isToday = false,
+            date = LocalDate.of(1993, 3, 13),
+            logs = listOf(
+              MealLog(id = 0, valid = true),
+              MealLog(id = 1, valid = true),
+              MealLog(id = 2, valid = true),
+            )
+          ),
+          HistoryRowState(
+            dayDisplay = "March 13, 1993",
+            dayCalories = 2000,
+            isToday = false,
+            date = LocalDate.of(1993, 3, 13),
+            logs = listOf(
+              MealLog(id = 0, valid = true),
+              MealLog(id = 1, valid = true),
+              MealLog(id = 2, valid = true),
+            )
+          ),
+          HistoryRowState(
+            dayDisplay = "January 8, 1993",
+            dayCalories = 2000,
+            isToday = false,
+            date = LocalDate.of(1993, 3, 13),
+            logs = listOf(
+              MealLog(id = 0, valid = true),
+              MealLog(id = 1, valid = true),
+              MealLog(id = 2, valid = true),
+            )
+          ),
+        )
+      ),
       navigate = {}
     )
   }
@@ -79,7 +127,7 @@ fun LogHistoryScreen(
   }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun HistoryScreenRowPreview() {
   CalorieSnapTheme {

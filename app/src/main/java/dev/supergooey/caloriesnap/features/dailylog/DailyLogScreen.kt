@@ -1,6 +1,8 @@
 package dev.supergooey.caloriesnap.features.dailylog
 
+import android.Manifest
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
@@ -89,24 +91,25 @@ import kotlinx.coroutines.launch
 private fun DailyLogScreenPreview() {
   CalorieSnapTheme {
     SharedTransitionScope {
-     AnimatedContent(targetState = true) { state ->
-       DailyLogScreen(
-         state = DailyLogFeature.State(
-           dayDisplay = "Today",
-           logs = listOf(
-             MealLog(id = 0, foodTitle = "Item One", valid = true),
-             MealLog(id = 1, foodTitle = "Item Two", valid = true),
-             MealLog(id = 2, foodTitle = "Item Three", valid = true),
-             MealLog(id = 3, foodTitle = "Item Four", valid = true),
-             MealLog(id = 4, foodTitle = "Item Five", valid = true),
-           )
-         ),
-         sharedTransitionScope = this@SharedTransitionScope,
-         animatedVisibilityScope = this@AnimatedContent,
-         action = {},
-         navigate = {}
-       )
-     }
+      AnimatedContent(targetState = true) { state ->
+        DailyLogScreen(
+          state = DailyLogFeature.State(
+            dayDisplay = "Today",
+            isToday = true,
+            logs = listOf(
+              MealLog(id = 0, foodTitle = "Item One", valid = true),
+              MealLog(id = 1, foodTitle = "Item Two", valid = true),
+              MealLog(id = 2, foodTitle = "Item Three", valid = true),
+              MealLog(id = 3, foodTitle = "Item Four", valid = true),
+              MealLog(id = 4, foodTitle = "Item Five", valid = true),
+            )
+          ),
+          sharedTransitionScope = this@SharedTransitionScope,
+          animatedVisibilityScope = this@AnimatedContent,
+          action = {},
+          navigate = {}
+        )
+      }
     }
   }
 }
@@ -125,45 +128,8 @@ fun DailyLogScreen(
       PicalTopBar(state, navigate)
     },
     floatingActionButton = {
-      if (LocalInspectionMode.current) {
-        Box(
-          modifier = Modifier
-            .size(80.dp)
-            .clip(CircleShape)
-            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
-            .clickable {},
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            modifier = Modifier.size(32.dp),
-            painter = painterResource(R.drawable.ic_capture),
-            tint = MaterialTheme.colorScheme.tertiary,
-            contentDescription = "Capture"
-          )
-        }
-      } else {
-        val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
-        Box(
-          modifier = Modifier
-            .size(80.dp)
-            .clip(CircleShape)
-            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
-            .clickable {
-              if (cameraPermissionState.status.isGranted) {
-                navigate(DailyLogFeature.Location.Camera)
-              } else {
-                cameraPermissionState.launchPermissionRequest()
-              }
-            },
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            modifier = Modifier.size(32.dp),
-            painter = painterResource(R.drawable.ic_capture),
-            tint = MaterialTheme.colorScheme.tertiary,
-            contentDescription = "Capture"
-          )
-        }
+      if (state.isToday) {
+        PicalFab(navigate)
       }
     }
   ) { paddingValues ->
@@ -207,6 +173,50 @@ fun DailyLogScreen(
   }
 }
 
+@Composable
+private fun PicalFab(navigate: (DailyLogFeature.Location) -> Unit) {
+  if (LocalInspectionMode.current) {
+    Box(
+      modifier = Modifier
+        .size(80.dp)
+        .clip(CircleShape)
+        .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+        .clickable {},
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(
+        modifier = Modifier.size(32.dp),
+        painter = painterResource(R.drawable.ic_capture),
+        tint = MaterialTheme.colorScheme.tertiary,
+        contentDescription = "Capture"
+      )
+    }
+  } else {
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    Box(
+      modifier = Modifier
+        .size(80.dp)
+        .clip(CircleShape)
+        .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+        .clickable {
+          if (cameraPermissionState.status.isGranted) {
+            navigate(DailyLogFeature.Location.Camera)
+          } else {
+            cameraPermissionState.launchPermissionRequest()
+          }
+        },
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(
+        modifier = Modifier.size(32.dp),
+        painter = painterResource(R.drawable.ic_capture),
+        tint = MaterialTheme.colorScheme.tertiary,
+        contentDescription = "Capture"
+      )
+    }
+  }
+}
+
 @Preview
 @Composable
 private fun PicalTopBarPreview() {
@@ -214,6 +224,7 @@ private fun PicalTopBarPreview() {
     PicalTopBar(
       state = DailyLogFeature.State(
         dayDisplay = "Today",
+        isToday = true,
         logs = listOf(
           MealLog(id = 0, foodTitle = "Item One", valid = true),
           MealLog(id = 1, foodTitle = "Item Two", valid = true),
@@ -238,21 +249,23 @@ private fun PicalTopBar(
       .fillMaxWidth()
       .padding(16.dp),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Box(
-      modifier = Modifier
-        .clip(CircleShape)
-        .background(color = MaterialTheme.colorScheme.primaryContainer)
-        .clickable { navigate(DailyLogFeature.Location.History) }
-        .padding(12.dp)
-    ) {
-      Icon(
-        painter = painterResource(R.drawable.ic_history),
-        tint = MaterialTheme.colorScheme.secondary,
-        contentDescription = ""
-      )
+    if (state.isToday) {
+      Box(
+        modifier = Modifier
+          .clip(CircleShape)
+          .background(color = MaterialTheme.colorScheme.primaryContainer)
+          .clickable { navigate(DailyLogFeature.Location.History) }
+          .padding(12.dp)
+      ) {
+        Icon(
+          painter = painterResource(R.drawable.ic_history),
+          tint = MaterialTheme.colorScheme.secondary,
+          contentDescription = ""
+        )
+      }
     }
+    Spacer(Modifier.weight(1f))
     Column(
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -267,17 +280,20 @@ private fun PicalTopBar(
         style = MaterialTheme.typography.displayLarge
       )
     }
-    Box(
-      modifier = Modifier
-        .clip(CircleShape)
-        .background(color = MaterialTheme.colorScheme.primaryContainer)
-        .padding(12.dp)
-    ) {
-      Icon(
-        painter = painterResource(R.drawable.ic_settings),
-        tint = MaterialTheme.colorScheme.secondary,
-        contentDescription = ""
-      )
+    Spacer(Modifier.weight(1f))
+    if (state.isToday) {
+      Box(
+        modifier = Modifier
+          .clip(CircleShape)
+          .background(color = MaterialTheme.colorScheme.primaryContainer)
+          .padding(12.dp)
+      ) {
+        Icon(
+          painter = painterResource(R.drawable.ic_settings),
+          tint = MaterialTheme.colorScheme.secondary,
+          contentDescription = ""
+        )
+      }
     }
   }
 }
