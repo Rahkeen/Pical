@@ -617,7 +617,10 @@ fun DailyLogRow3(
           animatedVisibilityScope = animatedVisibilityScope,
           resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
           boundsTransform = { _, _ ->
-            spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+            spring(
+              stiffness = Spring.StiffnessMediumLow,
+              dampingRatio = Spring.DampingRatioNoBouncy
+            )
           }
         )
         .clip(RoundedCornerShape(20.dp))
@@ -706,7 +709,7 @@ fun DailyLogRow3(
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ ->
                   spring(
-                    stiffness = Spring.StiffnessLow,
+                    stiffness = Spring.StiffnessMediumLow,
                     dampingRatio = Spring.DampingRatioNoBouncy
                   )
                 }
