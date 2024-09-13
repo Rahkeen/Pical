@@ -35,14 +35,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import dev.supergooey.caloriesnap.MealDay
 import dev.supergooey.caloriesnap.MealLog
-import dev.supergooey.caloriesnap.MealLogsByDay
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import java.time.LocalDate
@@ -202,7 +199,7 @@ fun HistoryScreenRow(
     Column(
       modifier = modifier
         .fillMaxWidth()
-        .heightIn(min = 160.dp)
+        .heightIn(min = 180.dp)
         .sharedBounds(
           sharedContentState = rememberSharedContentState(state.date),
           animatedVisibilityScope = animatedVisibilityScope,
@@ -216,52 +213,53 @@ fun HistoryScreenRow(
           interactionSource = remember { MutableInteractionSource() }
         ) {
           onClick()
-        },
-      verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        }
+        .padding(vertical = 8.dp)
+      ,
+      verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
-        modifier = Modifier.padding(top = 16.dp),
         text = state.dayDisplay,
         style = MaterialTheme.typography.displayLarge,
         color = MaterialTheme.colorScheme.primary,
         fontSize = 16.sp
       )
-      Row(
-        horizontalArrangement = Arrangement.spacedBy((-32).dp)
-      ) {
-        state.logs.take(3).forEachIndexed { index, log ->
-          val rotation = remember(index) { (-10..10).random().toFloat() }
-          if (LocalInspectionMode.current) {
-            Image(
-              modifier = Modifier
-                .graphicsLayer {
-                  rotationZ = rotation
-                  translationY = size.height * 0.4f
-                }
-                .size(100.dp)
-                .clip(RoundedCornerShape(8.dp)),
-              painter = painterResource(R.drawable.bibimbap),
-              contentScale = ContentScale.Crop,
-              contentDescription = log.foodTitle,
-            )
-          } else {
-            AsyncImage(
-              modifier = Modifier
-                .sharedElement(
-                  state = rememberSharedContentState(log.imageUri!!),
-                  animatedVisibilityScope = animatedVisibilityScope,
-                )
-                .graphicsLayer {
-                  rotationZ = rotation
-                  translationY = size.height * 0.4f
-                }
-                .size(100.dp)
-                .clip(RoundedCornerShape(8.dp)),
-              model = log.imageUri,
-              contentScale = ContentScale.Crop,
-              contentDescription = log.foodTitle,
-            )
+      if (state.logs.isNotEmpty()) {
+        Row(
+          horizontalArrangement = Arrangement.spacedBy((-32).dp)
+        ) {
+          state.logs.take(3).forEachIndexed { index, log ->
+            val rotation = remember(index) { (-10..10).random().toFloat() }
+            if (LocalInspectionMode.current) {
+              Image(
+                modifier = Modifier
+                  .graphicsLayer {
+                    rotationZ = rotation
+                  }
+                  .size(100.dp)
+                  .clip(RoundedCornerShape(8.dp)),
+                painter = painterResource(R.drawable.bibimbap),
+                contentScale = ContentScale.Crop,
+                contentDescription = log.foodTitle,
+              )
+            } else {
+              AsyncImage(
+                modifier = Modifier
+                  .sharedElement(
+                    state = rememberSharedContentState(log.imageUri!!),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                  )
+                  .graphicsLayer {
+                    rotationZ = rotation
+                  }
+                  .size(100.dp)
+                  .clip(RoundedCornerShape(8.dp)),
+                model = log.imageUri,
+                contentScale = ContentScale.Crop,
+                contentDescription = log.foodTitle,
+              )
+            }
           }
         }
       }
