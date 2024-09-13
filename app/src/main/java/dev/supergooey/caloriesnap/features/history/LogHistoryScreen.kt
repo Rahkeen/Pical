@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -70,9 +69,9 @@ fun LogHistoryScreen(
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        items(items = state.days) { day ->
-          HistoryScreenRow(day) {
-            navigate(LogHistoryFeature.Location.Logs(day.day.date.toString()))
+        items(items = state.rows) { row ->
+          HistoryScreenRow(row) {
+            navigate(LogHistoryFeature.Location.Logs(row.date.toString()))
           }
         }
       }
@@ -85,12 +84,11 @@ fun LogHistoryScreen(
 private fun HistoryScreenRowPreview() {
   CalorieSnapTheme {
     HistoryScreenRow(
-      state = MealLogsByDay(
-        day = MealDay(
-          date = LocalDate.parse("2024-09-12"),
-          totalCalories = 2000,
-          entryCount = 3
-        ),
+      state = HistoryRowState(
+        dayDisplay = "March 13, 1993",
+        dayCalories = 2000,
+        isToday = true,
+        date = LocalDate.of(1993, 3, 13),
         logs = listOf(
           MealLog(id = 0, valid = true),
           MealLog(id = 1, valid = true),
@@ -104,7 +102,7 @@ private fun HistoryScreenRowPreview() {
 
 @Composable
 fun HistoryScreenRow(
-  state: MealLogsByDay,
+  state: HistoryRowState,
   onClick: () -> Unit
 ) {
   Column(
@@ -124,7 +122,7 @@ fun HistoryScreenRow(
   ) {
     Text(
       modifier = Modifier.padding(top = 16.dp),
-      text = state.day.date.format(formatter),
+      text = state.dayDisplay,
       style = MaterialTheme.typography.displayLarge,
       color = MaterialTheme.colorScheme.primary,
       fontSize = 16.sp

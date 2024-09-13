@@ -36,7 +36,7 @@ interface DailyLogFeature {
 }
 
 class DailyLogViewModel(
-  private val date: LocalDate,
+  date: LocalDate,
   private val logStore: MealLogDatabase
 ) : ViewModel() {
   private val dayDisplay = date.toDisplay()
