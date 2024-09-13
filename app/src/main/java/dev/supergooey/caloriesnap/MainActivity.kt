@@ -145,6 +145,8 @@ fun App() {
         EditLogScreen(
           state = state,
           actions = model::actions,
+          sharedTransitionScope = this@SharedTransitionLayout,
+          animatedVisibilityScope = this@composable,
           navigate = { location ->
             when (location) {
               EditLogFeature.Location.Back -> {

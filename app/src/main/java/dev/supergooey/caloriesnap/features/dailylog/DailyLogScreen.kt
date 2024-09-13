@@ -612,6 +612,14 @@ fun DailyLogRow3(
       modifier = modifier
         .fillMaxWidth()
         .height(100.dp)
+        .sharedBounds(
+          sharedContentState = rememberSharedContentState(key = log.id),
+          animatedVisibilityScope = animatedVisibilityScope,
+          resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+          boundsTransform = { _, _ ->
+            spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+          }
+        )
         .clip(RoundedCornerShape(20.dp))
         .background(color = CoolRed.copy(alpha = 0.3f))
     ) {
@@ -697,7 +705,10 @@ fun DailyLogRow3(
                 state = rememberSharedContentState(log.imageUri!!),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ ->
-                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
+                  spring(
+                    stiffness = Spring.StiffnessLow,
+                    dampingRatio = Spring.DampingRatioNoBouncy
+                  )
                 }
               )
               .fillMaxHeight()

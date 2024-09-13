@@ -1,8 +1,11 @@
 package dev.supergooey.caloriesnap.features.edit
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
@@ -53,25 +56,34 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.WithTextStyle
+import dev.supergooey.caloriesnap.features.history.SharedTransitionPreviewHelper
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 
 @Preview
 @Composable
 private fun EditLogScreenPreview() {
-  CalorieSnapTheme {
-    EditLogScreen(
-      state = EditLogFeature.State(
-        title = "Big Bibimbap Energy"
-      ),
-      actions = {},
-      navigate = {},
-    )
+  SharedTransitionPreviewHelper { sharedTransitionScope, animatedVisibilityScope ->
+    CalorieSnapTheme {
+      EditLogScreen(
+        state = EditLogFeature.State(
+          title = "Big Bibimbap Energy"
+        ),
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+        actions = {},
+        navigate = {},
+      )
+    }
   }
 }
 
 @Composable
 fun EditLogScreen(
   state: EditLogFeature.State,
+  sharedTransitionScope: SharedTransitionScope,
+  animatedVisibilityScope: AnimatedVisibilityScope,
   actions: (EditLogFeature.Action) -> Unit,
   navigate: (EditLogFeature.Location) -> Unit
 ) {
@@ -85,116 +97,129 @@ fun EditLogScreen(
     }
   }
 
-  Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
-    Surface(modifier = Modifier.padding(paddingValues)) {
-      Column(
-        modifier = Modifier
-          .imePadding()
-          .fillMaxSize()
-          .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
-      ) {
-        Row(
+  with(sharedTransitionScope) {
+    Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
+      Surface(modifier = Modifier.padding(paddingValues)) {
+        Column(
           modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 100.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(color = MaterialTheme.colorScheme.surfaceContainer)
-            .padding(8.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(16.dp)
+            .imePadding()
+            .fillMaxSize()
+            .padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
         ) {
-          if (LocalInspectionMode.current) {
-            Image(
-              modifier = Modifier
-                .height(100.dp)
-                .aspectRatio(1f, matchHeightConstraintsFirst = true)
-                .clip(RoundedCornerShape(12.dp)),
-              painter = painterResource(R.drawable.bibimbap),
-              contentScale = ContentScale.Crop,
-              contentDescription = "food"
-            )
-          } else {
-            AsyncImage(
-              modifier = Modifier
-                .height(100.dp)
-                .aspectRatio(1f, matchHeightConstraintsFirst = true)
-                .clip(RoundedCornerShape(12.dp)),
-              model = state.imageUri,
-              contentScale = ContentScale.Crop,
-              contentDescription = "food"
-            )
-          }
-          Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            WithTextStyle(
-              style = MaterialTheme.typography.displayMedium,
-              color = MaterialTheme.colorScheme.onSurface
-            ) {
-              LogEditField(
-                modifier = Modifier.wrapContentSize(),
-                value = state.title,
-                onValueChanged = { actions(EditLogFeature.Action.EditTitle(it)) },
-                hint = "Sarcastic Food Title",
-                readOnly = state.finished
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .heightIn(min = 100.dp)
+              .sharedBounds(
+                sharedContentState = rememberSharedContentState(key = state.id),
+                animatedVisibilityScope = animatedVisibilityScope,
+                resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                boundsTransform = { _, _ ->
+                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                }
+              )
+              .clip(RoundedCornerShape(20.dp))
+              .background(color = MaterialTheme.colorScheme.surfaceContainer)
+              .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+          ) {
+            if (LocalInspectionMode.current) {
+              Image(
+                modifier = Modifier
+                  .height(100.dp)
+                  .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                  .clip(RoundedCornerShape(12.dp)),
+                painter = painterResource(R.drawable.bibimbap),
+                contentScale = ContentScale.Crop,
+                contentDescription = "food"
+              )
+            } else {
+              AsyncImage(
+                modifier = Modifier
+                  .height(100.dp)
+                  .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                  .clip(RoundedCornerShape(12.dp)),
+                model = state.imageUri,
+                contentScale = ContentScale.Crop,
+                contentDescription = "food"
               )
             }
-            WithTextStyle(
-              style = MaterialTheme.typography.displayMedium.copy(fontSize = 12.sp),
-              color = if (state.calories.error) {
-                MaterialTheme.colorScheme.onErrorContainer
-              } else {
-                MaterialTheme.colorScheme.primary
-              }
+            Column(
+              modifier = Modifier.weight(1f),
+              verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+              WithTextStyle(
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onSurface
               ) {
                 LogEditField(
                   modifier = Modifier.wrapContentSize(),
-                  value = state.calories.text,
-                  onValueChanged = {
-                    actions(EditLogFeature.Action.EditCalories(it))
-                  },
-                  keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                  ),
-                  hint = "100",
-                  maxLines = 1,
-                  readOnly = state.finished,
-                  error = state.calories.error
+                  value = state.title,
+                  onValueChanged = { actions(EditLogFeature.Action.EditTitle(it)) },
+                  hint = "Sarcastic Food Title",
+                  readOnly = state.finished
                 )
-                Text(text = "cal")
+              }
+              WithTextStyle(
+                style = MaterialTheme.typography.displayMedium.copy(fontSize = 12.sp),
+                color = if (state.calories.error) {
+                  MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                  MaterialTheme.colorScheme.primary
+                }
+              ) {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                  LogEditField(
+                    modifier = Modifier.wrapContentSize(),
+                    value = state.calories.text,
+                    onValueChanged = {
+                      actions(EditLogFeature.Action.EditCalories(it))
+                    },
+                    keyboardOptions = KeyboardOptions(
+                      keyboardType = KeyboardType.Number
+                    ),
+                    hint = "100",
+                    maxLines = 1,
+                    readOnly = state.finished,
+                    error = state.calories.error
+                  )
+                  Text(text = "cal")
+                }
               }
             }
           }
-        }
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .clip(RectangleShape),
-          horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
-        ) {
-          Button(
-            enabled = state.canSave,
-            onClick = { actions(EditLogFeature.Action.Save) },
-            colors = ButtonDefaults.buttonColors(
-              containerColor = MaterialTheme.colorScheme.primaryContainer,
-              contentColor = MaterialTheme.colorScheme.primary,
-              disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-              disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-            )
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(RectangleShape),
+            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
           ) {
-            Text("Save")
-          }
-          Button(
-            onClick = { actions(EditLogFeature.Action.Cancel) },
-            colors = ButtonDefaults.buttonColors(
-              containerColor = MaterialTheme.colorScheme.surfaceContainer,
-              contentColor = MaterialTheme.colorScheme.onSurface
-            )
-          ) {
-            Text("Cancel")
+            Button(
+              enabled = state.canSave,
+              onClick = { actions(EditLogFeature.Action.Save) },
+              colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+              )
+            ) {
+              Text("Save")
+            }
+            Button(
+              onClick = { actions(EditLogFeature.Action.Cancel) },
+              colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                contentColor = MaterialTheme.colorScheme.onSurface
+              )
+            ) {
+              Text("Cancel")
+            }
           }
         }
       }
