@@ -92,7 +92,8 @@ private fun DailyLogScreenPreview() {
      AnimatedContent(targetState = true) { state ->
        DailyLogScreen(
          state = DailyLogFeature.State(
-           listOf(
+           dayDisplay = "Today",
+           logs = listOf(
              MealLog(id = 0, foodTitle = "Item One", valid = true),
              MealLog(id = 1, foodTitle = "Item Two", valid = true),
              MealLog(id = 2, foodTitle = "Item Three", valid = true),
@@ -212,6 +213,7 @@ private fun PicalTopBarPreview() {
   CalorieSnapTheme {
     PicalTopBar(
       state = DailyLogFeature.State(
+        dayDisplay = "Today",
         logs = listOf(
           MealLog(id = 0, foodTitle = "Item One", valid = true),
           MealLog(id = 1, foodTitle = "Item Two", valid = true),

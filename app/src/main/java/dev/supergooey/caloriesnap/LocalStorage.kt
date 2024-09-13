@@ -77,7 +77,7 @@ interface MealLogDao {
   fun getMealLogsByDay(date: LocalDate): Flow<MealLogsByDay?>
 
   @Transaction
-  @Query("SELECT * FROM MealDay ORDER BY date")
+  @Query("SELECT * FROM MealDay ORDER BY date DESC")
   fun getAllMealLogsByDay(): Flow<List<MealLogsByDay>>
 
   @Transaction

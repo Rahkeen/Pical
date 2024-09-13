@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.MealLogDatabase
+import dev.supergooey.caloriesnap.features.history.formatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,9 +14,11 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import kotlin.math.log
 
 interface DailyLogFeature {
   data class State(
+    val dayDisplay: String,
     val logs: List<MealLog>
   ) {
     val caloriesForDay = logs.sumOf { it.totalCalories }
@@ -33,17 +36,18 @@ interface DailyLogFeature {
 }
 
 class DailyLogViewModel(
+  private val date: LocalDate,
   private val logStore: MealLogDatabase
 ) : ViewModel() {
-  private val internalState = MutableStateFlow(DailyLogFeature.State(logs = emptyList()))
-  private val today = LocalDate.now()
-  private val logsFlow = logStore.mealLogDao().getMealLogsByDay(today).filterNotNull()
+  private val dayDisplay = date.toDisplay()
+  private val internalState = MutableStateFlow(DailyLogFeature.State(dayDisplay = dayDisplay, logs = emptyList()))
+  private val logsFlow = logStore.mealLogDao().getMealLogsByDay(date).filterNotNull()
   val state = combine(internalState.asStateFlow(), logsFlow) { state, logsByDay ->
     state.copy(logs = logsByDay.logs)
   }.stateIn(
     scope = viewModelScope,
     started = SharingStarted.WhileSubscribed(),
-    initialValue = DailyLogFeature.State(emptyList())
+    initialValue = DailyLogFeature.State(dayDisplay = dayDisplay, logs = emptyList())
   )
 
   fun actions(action: DailyLogFeature.Action) {
@@ -57,9 +61,17 @@ class DailyLogViewModel(
   }
 
   @Suppress("UNCHECKED_CAST")
-  class Factory(private val logStore: MealLogDatabase) : ViewModelProvider.Factory {
+  class Factory(private val date: LocalDate, private val logStore: MealLogDatabase) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-      return DailyLogViewModel(logStore) as T
+      return DailyLogViewModel(date, logStore) as T
     }
   }
+}
+
+fun LocalDate.isToday(): Boolean {
+  return this == LocalDate.now()
+}
+
+fun LocalDate.toDisplay(): String {
+  return if (this.isToday()) "Today" else format(formatter)
 }

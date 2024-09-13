@@ -691,7 +691,7 @@ class CameraViewModel(
           val uri = store.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
           val log = state.value.mealResponse!!.toMealLog(uri)
           db.mealLogDao().addMealLog(log)
-          navController.navigate("home")
+          navController.navigate("logs")
         }
       }
 
