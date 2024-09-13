@@ -22,6 +22,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.supergooey.caloriesnap.features.capture.CaptureFeature
+import dev.supergooey.caloriesnap.features.capture.CaptureScreen
+import dev.supergooey.caloriesnap.features.capture.CaptureViewModel
 import dev.supergooey.caloriesnap.features.dailylog.DailyLogScreen
 import dev.supergooey.caloriesnap.features.dailylog.DailyLogViewModel
 import dev.supergooey.caloriesnap.features.edit.EditLogFeature
@@ -94,17 +97,22 @@ fun App() {
         enterTransition = { slideInHorizontally { it } },
         exitTransition = { slideOutHorizontally { it } }
       ) {
-        val cameraViewModel = viewModel<CameraViewModel>(
-          factory = CameraViewModel.Factory(
+        val model = viewModel<CaptureViewModel>(
+          factory = CaptureViewModel.Factory(
             store = context.cameraStore(),
             db = MealLogDatabase.getDatabase(context)
           )
         )
-        val state by cameraViewModel.state.collectAsState()
-        CameraScreen(
+        val state by model.state.collectAsState()
+        CaptureScreen(
           state = state,
-          actions = {
-            cameraViewModel.actions(it, navController)
+          actions = model::actions,
+          navigation = { location ->
+            when (location) {
+              CaptureFeature.Location.Back -> {
+                navController.popBackStack()
+              }
+            }
           }
         )
       }
