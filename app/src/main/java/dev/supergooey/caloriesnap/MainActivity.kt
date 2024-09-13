@@ -5,6 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -34,6 +37,8 @@ import dev.supergooey.caloriesnap.features.history.LogHistoryFeature
 import dev.supergooey.caloriesnap.features.history.LogHistoryScreen
 import dev.supergooey.caloriesnap.features.history.LogHistoryViewModel
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +64,12 @@ fun App() {
         .fillMaxSize()
         .background(color = MaterialTheme.colorScheme.background),
       navController = navController,
+      enterTransition = {
+        fadeIn(animationSpec = tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing))
+      },
+      exitTransition = {
+        fadeOut(animationSpec = tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing))
+      },
       startDestination = "logs",
     ) {
       composable(
@@ -155,10 +166,11 @@ fun App() {
           sharedTransitionScope = this@SharedTransitionLayout,
           animatedVisibilityScope = this@composable
         ) { location ->
-          when(location) {
+          when (location) {
             LogHistoryFeature.Location.Back -> {
               navController.popBackStack()
             }
+
             is LogHistoryFeature.Location.Logs -> {
               navController.navigate(location.route)
             }

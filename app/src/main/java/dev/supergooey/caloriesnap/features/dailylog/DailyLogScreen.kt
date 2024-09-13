@@ -88,6 +88,8 @@ import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.features.history.SharedTransitionPreviewHelper
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
+import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -160,6 +162,9 @@ fun DailyLogScreen(
             animatedVisibilityScope = animatedVisibilityScope,
             placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
             resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+            boundsTransform = { _, _ ->
+              tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
+            }
           )
           .clip(RoundedCornerShape(28.dp)),
       ) {
@@ -691,6 +696,9 @@ fun DailyLogRow3(
               .sharedElement(
                 state = rememberSharedContentState(log.imageUri!!),
                 animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ ->
+                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
+                }
               )
               .fillMaxHeight()
               .aspectRatio(1f, matchHeightConstraintsFirst = true)

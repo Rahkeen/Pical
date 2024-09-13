@@ -4,6 +4,9 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,6 +45,8 @@ import coil.compose.AsyncImage
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import java.time.LocalDate
 
 @PreviewLightDark
@@ -133,7 +138,6 @@ fun LogHistoryScreen(
   Scaffold(
     containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
   ) { paddingValues ->
-
     Surface(
       modifier = Modifier.padding(paddingValues),
       color = MaterialTheme.colorScheme.surfaceContainerLowest,
@@ -203,8 +207,10 @@ fun HistoryScreenRow(
         .sharedBounds(
           sharedContentState = rememberSharedContentState(state.date),
           animatedVisibilityScope = animatedVisibilityScope,
-          placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
           resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+          boundsTransform = { _, _ ->
+            tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
+          }
         )
         .clip(RoundedCornerShape(24.dp))
         .background(color = MaterialTheme.colorScheme.surface)
@@ -249,6 +255,9 @@ fun HistoryScreenRow(
                   .sharedElement(
                     state = rememberSharedContentState(log.imageUri!!),
                     animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ ->
+                      spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                    }
                   )
                   .graphicsLayer {
                     rotationZ = rotation
