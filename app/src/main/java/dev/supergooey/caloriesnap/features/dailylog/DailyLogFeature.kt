@@ -19,6 +19,7 @@ interface DailyLogFeature {
   data class State(
     val dayDisplay: String,
     val isToday: Boolean,
+    val date: LocalDate,
     val logs: List<MealLog>,
   ) {
     val caloriesForDay = logs.sumOf { it.totalCalories }
@@ -45,6 +46,7 @@ class DailyLogViewModel(
     DailyLogFeature.State(
       dayDisplay = dayDisplay,
       isToday = isToday,
+      date = date,
       logs = emptyList()
     )
   )
@@ -57,6 +59,7 @@ class DailyLogViewModel(
     initialValue = DailyLogFeature.State(
       dayDisplay = dayDisplay,
       isToday = isToday,
+      date = date,
       logs = emptyList()
     )
   )

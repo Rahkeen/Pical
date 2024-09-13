@@ -150,7 +150,11 @@ fun App() {
           )
         )
         val state by model.state.collectAsState()
-        LogHistoryScreen(state) { location ->
+        LogHistoryScreen(
+          state = state,
+          sharedTransitionScope = this@SharedTransitionLayout,
+          animatedVisibilityScope = this@composable
+        ) { location ->
           when(location) {
             LogHistoryFeature.Location.Back -> {
               navController.popBackStack()
@@ -159,7 +163,6 @@ fun App() {
               navController.navigate(location.route)
             }
           }
-
         }
       }
     }

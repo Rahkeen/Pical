@@ -84,6 +84,7 @@ import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @Preview
 @Composable
@@ -95,6 +96,7 @@ private fun DailyLogScreenPreview() {
           state = DailyLogFeature.State(
             dayDisplay = "Today",
             isToday = true,
+            date = LocalDate.now(),
             logs = listOf(
               MealLog(id = 0, foodTitle = "Item One", valid = true),
               MealLog(id = 1, foodTitle = "Item Two", valid = true),
@@ -121,50 +123,57 @@ fun DailyLogScreen(
   action: (DailyLogFeature.Action) -> Unit,
   navigate: (DailyLogFeature.Location) -> Unit
 ) {
-  Scaffold(
-    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-    topBar = {
-      PicalTopBar(state, navigate)
-    },
-    floatingActionButton = {
-      if (state.isToday) {
-        PicalFab(navigate)
+  with(sharedTransitionScope) {
+    Scaffold(
+      containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+      topBar = {
+        PicalTopBar(state, navigate)
+      },
+      floatingActionButton = {
+        if (state.isToday) {
+          PicalFab(navigate)
+        }
       }
-    }
-  ) { paddingValues ->
-    Surface(
-      modifier = Modifier.padding(paddingValues),
-      shape = RoundedCornerShape(
-        28.dp
-      )
-    ) {
-      Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-          modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp),
-          verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          item {
-            Spacer(modifier = Modifier.height(0.dp))
-          }
-          items(items = state.logs, key = { it.id }) { log ->
-            DailyLogRow3(
-              modifier = Modifier
-                .animateItem()
-                .fillMaxWidth()
-                .wrapContentHeight(),
-              log = log,
-              onClick = { navigate(DailyLogFeature.Location.Log(log.id)) },
-              onDelete = { action(DailyLogFeature.Action.DeleteItem(log)) }
-            )
-          }
-          item {
-            Spacer(
-              modifier = Modifier
-                .height(80.dp)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-            )
+    ) { paddingValues ->
+      Surface(
+        modifier = Modifier
+          .padding(paddingValues)
+          .sharedBounds(
+            sharedContentState = rememberSharedContentState(state.date),
+            animatedVisibilityScope = animatedVisibilityScope,
+            placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
+            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+          )
+          .clip(RoundedCornerShape(28.dp)),
+      ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+          LazyColumn(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            item {
+              Spacer(modifier = Modifier.height(0.dp))
+            }
+            items(items = state.logs, key = { it.id }) { log ->
+              DailyLogRow3(
+                modifier = Modifier
+                  .animateItem()
+                  .fillMaxWidth()
+                  .wrapContentHeight(),
+                log = log,
+                onClick = { navigate(DailyLogFeature.Location.Log(log.id)) },
+                onDelete = { action(DailyLogFeature.Action.DeleteItem(log)) }
+              )
+            }
+            item {
+              Spacer(
+                modifier = Modifier
+                  .height(80.dp)
+                  .windowInsetsPadding(WindowInsets.navigationBars)
+              )
+            }
           }
         }
       }
@@ -224,6 +233,7 @@ private fun PicalTopBarPreview() {
       state = DailyLogFeature.State(
         dayDisplay = "Today",
         isToday = true,
+        date = LocalDate.now(),
         logs = listOf(
           MealLog(id = 0, foodTitle = "Item One", valid = true),
           MealLog(id = 1, foodTitle = "Item Two", valid = true),
