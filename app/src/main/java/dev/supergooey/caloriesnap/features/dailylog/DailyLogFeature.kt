@@ -30,7 +30,7 @@ interface DailyLogFeature {
   }
 
   sealed class Location(val route: String) {
-    data object Camera : Location("camera")
+    data object Camera : Location("capture")
     data class Log(val id: Int) : Location("log/$id")
     data object History : Location("history")
   }

@@ -105,9 +105,23 @@ fun App() {
         }
       }
       composable(
-        route = "camera",
-        enterTransition = { slideInHorizontally { it } },
-        exitTransition = { slideOutHorizontally { it } }
+        route = "capture",
+        enterTransition = {
+          slideInHorizontally(
+            animationSpec = tween(
+              durationMillis = DURATION_EXTRA_LONG,
+              easing = EmphasizedEasing
+            )
+          ) { it }
+        },
+        exitTransition = {
+          slideOutHorizontally(
+            animationSpec = tween(
+              durationMillis = DURATION_EXTRA_LONG,
+              easing = EmphasizedEasing
+            )
+          ) { it }
+        }
       ) {
         val model = viewModel<CaptureViewModel>(
           factory = CaptureViewModel.Factory(
