@@ -80,6 +80,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
+import dev.supergooey.caloriesnap.features.history.SharedTransitionPreviewHelper
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
@@ -142,7 +143,7 @@ fun DailyLogScreen(
             sharedContentState = rememberSharedContentState(state.date),
             animatedVisibilityScope = animatedVisibilityScope,
             placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
-            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
           )
           .clip(RoundedCornerShape(28.dp)),
       ) {
@@ -163,6 +164,8 @@ fun DailyLogScreen(
                   .fillMaxWidth()
                   .wrapContentHeight(),
                 log = log,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 onClick = { navigate(DailyLogFeature.Location.Log(log.id)) },
                 onDelete = { action(DailyLogFeature.Action.DeleteItem(log)) }
               )
@@ -326,7 +329,6 @@ fun DailyLogRowOptions() {
       ) {
         DailyLogRow(log = log)
         DailyLogRow2(log = log)
-        DailyLogRow3(log = log)
       }
     }
   }
@@ -543,14 +545,18 @@ private fun DailyLogRow2(
 @PreviewLightDark
 @Composable
 private fun DailyLogRowPreview3() {
-  CalorieSnapTheme {
-    DailyLogRow3(
-      log = MealLog(
-        foodTitle = "Big Bibimbap Energy",
-        totalCalories = 600,
-        valid = true
+  SharedTransitionPreviewHelper { sharedTransitionScope, animatedVisibilityScope ->
+    CalorieSnapTheme {
+      DailyLogRow3(
+        log = MealLog(
+          foodTitle = "Big Bibimbap Energy",
+          totalCalories = 600,
+          valid = true
+        ),
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope
       )
-    )
+    }
   }
 }
 
@@ -558,6 +564,8 @@ private fun DailyLogRowPreview3() {
 fun DailyLogRow3(
   modifier: Modifier = Modifier,
   log: MealLog,
+  sharedTransitionScope: SharedTransitionScope,
+  animatedVisibilityScope: AnimatedVisibilityScope,
   showEdit: Boolean = true,
   onClick: () -> Unit = {},
   onDelete: () -> Unit = {},
@@ -575,149 +583,155 @@ fun DailyLogRow3(
       haptics.performHapticFeedback(HapticFeedbackType.LongPress)
     }
   }
-  Box(
-    modifier = modifier
-      .fillMaxWidth()
-      .height(100.dp)
-      .clip(RoundedCornerShape(20.dp))
-      .background(color = CoolRed.copy(alpha = 0.3f))
-  ) {
+  with(sharedTransitionScope) {
     Box(
-      modifier = Modifier
-        .fillMaxWidth(0.25f)
-        .fillMaxHeight(),
-      contentAlignment = Alignment.Center
-    ) {
-      Icon(
-        modifier = Modifier
-          .graphicsLayer {
-            val outputScale = 0.5f + (0.2f * progress)
-            scaleX = outputScale
-            scaleY = outputScale
-          }
-          .size(32.dp),
-        painter = painterResource(R.drawable.ic_trash_filled),
-        tint = color,
-        contentDescription = "Delete"
-      )
-    }
-    Row(
       modifier = modifier
-        .graphicsLayer {
-          val triggerPoint = size.width * 0.25f
-          translationX = minOf(dragOffset.value, triggerPoint)
-          progress = (translationX / triggerPoint).coerceIn(0f, 1f)
-          trigger = translationX >= triggerPoint
-        }
-        .fillMaxSize()
+        .fillMaxWidth()
+        .height(100.dp)
         .clip(RoundedCornerShape(20.dp))
-        .background(MaterialTheme.colorScheme.surfaceContainer)
-        .clickable(
-          indication = ripple(color = MaterialTheme.colorScheme.secondaryContainer),
-          interactionSource = interactionSource
-        ) { onClick() }
-        .padding(8.dp)
-        .pointerInput(Unit) {
-          detectHorizontalDragGestures(
-            onDragStart = {},
-            onDragEnd = {
-              if (trigger) {
-                onDelete()
-              }
-              scope.launch {
-                dragOffset.animateTo(
-                  0f,
-                  animationSpec = spring(
-                    stiffness = Spring.StiffnessLow,
-                    dampingRatio = 0.8f
+        .background(color = CoolRed.copy(alpha = 0.3f))
+    ) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth(0.25f)
+          .fillMaxHeight(),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(
+          modifier = Modifier
+            .graphicsLayer {
+              val outputScale = 0.5f + (0.2f * progress)
+              scaleX = outputScale
+              scaleY = outputScale
+            }
+            .size(32.dp),
+          painter = painterResource(R.drawable.ic_trash_filled),
+          tint = color,
+          contentDescription = "Delete"
+        )
+      }
+      Row(
+        modifier = modifier
+          .graphicsLayer {
+            val triggerPoint = size.width * 0.25f
+            translationX = minOf(dragOffset.value, triggerPoint)
+            progress = (translationX / triggerPoint).coerceIn(0f, 1f)
+            trigger = translationX >= triggerPoint
+          }
+          .fillMaxSize()
+          .clip(RoundedCornerShape(20.dp))
+          .background(MaterialTheme.colorScheme.surfaceContainer)
+          .clickable(
+            indication = ripple(color = MaterialTheme.colorScheme.secondaryContainer),
+            interactionSource = interactionSource
+          ) { onClick() }
+          .padding(8.dp)
+          .pointerInput(Unit) {
+            detectHorizontalDragGestures(
+              onDragStart = {},
+              onDragEnd = {
+                if (trigger) {
+                  onDelete()
+                }
+                scope.launch {
+                  dragOffset.animateTo(
+                    0f,
+                    animationSpec = spring(
+                      stiffness = Spring.StiffnessLow,
+                      dampingRatio = 0.8f
+                    )
                   )
-                )
-              }
-            },
-            onHorizontalDrag = { _, dragAmount ->
-              scope.launch {
-                val update = dragOffset.value + dragAmount
-                if (update > 0) {
-                  dragOffset.snapTo(update)
+                }
+              },
+              onHorizontalDrag = { _, dragAmount ->
+                scope.launch {
+                  val update = dragOffset.value + dragAmount
+                  if (update > 0) {
+                    dragOffset.snapTo(update)
+                  }
                 }
               }
-            }
+            )
+          },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+      ) {
+        if (LocalInspectionMode.current) {
+          Image(
+            modifier = Modifier
+              .fillMaxHeight()
+              .aspectRatio(1f, matchHeightConstraintsFirst = true)
+              .clip(RoundedCornerShape(12.dp)),
+            painter = painterResource(R.drawable.bibimbap),
+            contentScale = ContentScale.Crop,
+            contentDescription = "food"
           )
-        },
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-      if (LocalInspectionMode.current) {
-        Image(
-          modifier = Modifier
-            .fillMaxHeight()
-            .aspectRatio(1f, matchHeightConstraintsFirst = true)
-            .clip(RoundedCornerShape(12.dp)),
-          painter = painterResource(R.drawable.bibimbap),
-          contentScale = ContentScale.Crop,
-          contentDescription = "food"
-        )
-      } else {
-        AsyncImage(
-          modifier = Modifier
-            .fillMaxHeight()
-            .aspectRatio(1f, matchHeightConstraintsFirst = true)
-            .clip(RoundedCornerShape(12.dp)),
-          model = log.imageUri,
-          contentScale = ContentScale.Crop,
-          contentDescription = "food"
-        )
+        } else {
+          AsyncImage(
+            modifier = Modifier
+              .sharedElement(
+                state = rememberSharedContentState(log.imageUri!!),
+                animatedVisibilityScope = animatedVisibilityScope,
+              )
+              .fillMaxHeight()
+              .aspectRatio(1f, matchHeightConstraintsFirst = true)
+              .clip(RoundedCornerShape(12.dp)),
+            model = log.imageUri,
+            contentScale = ContentScale.Crop,
+            contentDescription = "food"
+          )
 
-      }
-      Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-          modifier = Modifier.wrapContentSize(),
-          textAlign = TextAlign.Start,
-          text = log.foodTitle!!,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.displayMedium,
-          color = MaterialTheme.colorScheme.onSurface,
-          fontSize = 14.sp,
-        )
-        Text(
-          modifier = Modifier.wrapContentSize(),
-          text = "${log.totalCalories} cal",
-          color = MaterialTheme.colorScheme.primary,
-          style = MaterialTheme.typography.displayMedium,
-          fontSize = 12.sp,
-          fontWeight = FontWeight.Medium
-        )
-      }
-
-      if (showEdit) {
-        val start = remember { RoundedPolygon.circle(numVertices = 6) }
-        val end = remember {
-          RoundedPolygon(
-            numVertices = 6,
-            rounding = CornerRounding(0.3f, smoothing = 1.0f)
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          Text(
+            modifier = Modifier.wrapContentSize(),
+            textAlign = TextAlign.Start,
+            text = log.foodTitle!!,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 14.sp,
+          )
+          Text(
+            modifier = Modifier.wrapContentSize(),
+            text = "${log.totalCalories} cal",
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.displayMedium,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
           )
         }
-        val morph = remember { Morph(start, end) }
-        val morphProgress by animateFloatAsState(
-          targetValue = if (pressed) 1f else 0f,
-          animationSpec = spring(),
-          label = "edit_shape"
-        )
-        Box(
-          modifier = Modifier
-            .align(Alignment.Bottom)
-            .size(36.dp)
-            .clip(shape = MorphPolygonShape(morph, morphProgress))
-            .background(color = MaterialTheme.colorScheme.secondaryContainer),
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            modifier = Modifier.size(16.dp),
-            painter = painterResource(R.drawable.ic_edit),
-            tint = MaterialTheme.colorScheme.secondary,
-            contentDescription = "Edit"
+
+        if (showEdit) {
+          val start = remember { RoundedPolygon.circle(numVertices = 6) }
+          val end = remember {
+            RoundedPolygon(
+              numVertices = 6,
+              rounding = CornerRounding(0.3f, smoothing = 1.0f)
+            )
+          }
+          val morph = remember { Morph(start, end) }
+          val morphProgress by animateFloatAsState(
+            targetValue = if (pressed) 1f else 0f,
+            animationSpec = spring(),
+            label = "edit_shape"
           )
+          Box(
+            modifier = Modifier
+              .align(Alignment.Bottom)
+              .size(36.dp)
+              .clip(shape = MorphPolygonShape(morph, morphProgress))
+              .background(color = MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              modifier = Modifier.size(16.dp),
+              painter = painterResource(R.drawable.ic_edit),
+              tint = MaterialTheme.colorScheme.secondary,
+              contentDescription = "Edit"
+            )
+          }
         }
       }
     }

@@ -207,7 +207,7 @@ fun HistoryScreenRow(
           sharedContentState = rememberSharedContentState(state.date),
           animatedVisibilityScope = animatedVisibilityScope,
           placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
-          resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+          resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
         )
         .clip(RoundedCornerShape(24.dp))
         .background(color = MaterialTheme.colorScheme.surface)
@@ -228,10 +228,6 @@ fun HistoryScreenRow(
         fontSize = 16.sp
       )
       Row(
-        modifier = Modifier
-          .graphicsLayer {
-            translationY = size.height * 0.4f
-          },
         horizontalArrangement = Arrangement.spacedBy((-32).dp)
       ) {
         state.logs.take(3).forEachIndexed { index, log ->
@@ -241,6 +237,7 @@ fun HistoryScreenRow(
               modifier = Modifier
                 .graphicsLayer {
                   rotationZ = rotation
+                  translationY = size.height * 0.4f
                 }
                 .size(100.dp)
                 .clip(RoundedCornerShape(8.dp)),
@@ -251,8 +248,13 @@ fun HistoryScreenRow(
           } else {
             AsyncImage(
               modifier = Modifier
+                .sharedElement(
+                  state = rememberSharedContentState(log.imageUri!!),
+                  animatedVisibilityScope = animatedVisibilityScope,
+                )
                 .graphicsLayer {
                   rotationZ = rotation
+                  translationY = size.height * 0.4f
                 }
                 .size(100.dp)
                 .clip(RoundedCornerShape(8.dp)),
