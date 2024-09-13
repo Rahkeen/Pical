@@ -257,7 +257,7 @@ private fun PicalTopBar(
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
       Text(
-        text = "TODAY",
+        text = state.dayDisplay.uppercase(),
         color = MaterialTheme.colorScheme.onSurface,
         style = MaterialTheme.typography.displaySmall
       )

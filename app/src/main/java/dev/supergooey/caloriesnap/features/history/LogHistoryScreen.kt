@@ -1,6 +1,9 @@
 package dev.supergooey.caloriesnap.features.history
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,12 +46,18 @@ import java.time.LocalDate
 @Composable
 private fun LogHistoryScreenPreview() {
   CalorieSnapTheme {
-    LogHistoryScreen(state = LogHistoryFeature.State())
+    LogHistoryScreen(
+      state = LogHistoryFeature.State(),
+      navigate = {}
+    )
   }
 }
 
 @Composable
-fun LogHistoryScreen(state: LogHistoryFeature.State) {
+fun LogHistoryScreen(
+  state: LogHistoryFeature.State,
+  navigate: (LogHistoryFeature.Location) -> Unit
+) {
   Scaffold(
     containerColor = MaterialTheme.colorScheme.surface
   ) { paddingValues ->
@@ -61,7 +71,9 @@ fun LogHistoryScreen(state: LogHistoryFeature.State) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
         items(items = state.days) { day ->
-          HistoryScreenRow(day)
+          HistoryScreenRow(day) {
+            navigate(LogHistoryFeature.Location.Logs(day.day.date.toString()))
+          }
         }
       }
     }
@@ -84,65 +96,72 @@ private fun HistoryScreenRowPreview() {
           MealLog(id = 1, valid = true),
           MealLog(id = 2, valid = true),
         )
-      )
+      ),
+      onClick = {}
     )
   }
 }
 
 @Composable
-fun HistoryScreenRow(state: MealLogsByDay) {
-  Surface(
-    color = MaterialTheme.colorScheme.surfaceContainer,
-    shape = RoundedCornerShape(24.dp)
-  ) {
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .heightIn(min = 160.dp),
-      verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Text(
-        modifier = Modifier.padding(top = 16.dp),
-        text = state.day.date.format(formatter),
-        style = MaterialTheme.typography.displayLarge,
-        color = MaterialTheme.colorScheme.primary,
-        fontSize = 16.sp
-      )
-      Row(
-        modifier = Modifier
-          .graphicsLayer {
-            translationY = size.height * 0.4f
-          },
-        horizontalArrangement = Arrangement.spacedBy((-32).dp)
+fun HistoryScreenRow(
+  state: MealLogsByDay,
+  onClick: () -> Unit
+) {
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .heightIn(min = 160.dp)
+      .clip(RoundedCornerShape(24.dp))
+      .background(color = MaterialTheme.colorScheme.surfaceContainer)
+      .clickable(
+        indication = ripple(color = MaterialTheme.colorScheme.primary),
+        interactionSource = remember { MutableInteractionSource() }
       ) {
-        state.logs.take(3).forEachIndexed { index, log ->
-          val rotation = remember(index) { (-10..10).random().toFloat() }
-          if (LocalInspectionMode.current) {
-            Image(
-              modifier = Modifier
-                .graphicsLayer {
-                  rotationZ = rotation
-                }
-                .size(100.dp)
-                .clip(RoundedCornerShape(8.dp)),
-              painter = painterResource(R.drawable.bibimbap),
-              contentScale = ContentScale.Crop,
-              contentDescription = log.foodTitle,
-            )
-          } else {
-            AsyncImage(
-              modifier = Modifier
-                .graphicsLayer {
-                  rotationZ = rotation
-                }
-                .size(100.dp)
-                .clip(RoundedCornerShape(8.dp)),
-              model = log.imageUri,
-              contentScale = ContentScale.Crop,
-              contentDescription = log.foodTitle,
-            )
-          }
+        onClick()
+      },
+    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Text(
+      modifier = Modifier.padding(top = 16.dp),
+      text = state.day.date.format(formatter),
+      style = MaterialTheme.typography.displayLarge,
+      color = MaterialTheme.colorScheme.primary,
+      fontSize = 16.sp
+    )
+    Row(
+      modifier = Modifier
+        .graphicsLayer {
+          translationY = size.height * 0.4f
+        },
+      horizontalArrangement = Arrangement.spacedBy((-32).dp)
+    ) {
+      state.logs.take(3).forEachIndexed { index, log ->
+        val rotation = remember(index) { (-10..10).random().toFloat() }
+        if (LocalInspectionMode.current) {
+          Image(
+            modifier = Modifier
+              .graphicsLayer {
+                rotationZ = rotation
+              }
+              .size(100.dp)
+              .clip(RoundedCornerShape(8.dp)),
+            painter = painterResource(R.drawable.bibimbap),
+            contentScale = ContentScale.Crop,
+            contentDescription = log.foodTitle,
+          )
+        } else {
+          AsyncImage(
+            modifier = Modifier
+              .graphicsLayer {
+                rotationZ = rotation
+              }
+              .size(100.dp)
+              .clip(RoundedCornerShape(8.dp)),
+            model = log.imageUri,
+            contentScale = ContentScale.Crop,
+            contentDescription = log.foodTitle,
+          )
         }
       }
     }

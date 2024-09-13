@@ -8,6 +8,7 @@ import dev.supergooey.caloriesnap.MealLogsByDay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 interface LogHistoryFeature {
@@ -16,7 +17,7 @@ interface LogHistoryFeature {
   )
 
   sealed class Location(val route: String) {
-
+    data class Logs(val date: String): Location(route ="logs?date=$date")
   }
 }
 

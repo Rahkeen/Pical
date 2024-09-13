@@ -141,7 +141,9 @@ fun App() {
           )
         )
         val state by model.state.collectAsState()
-        LogHistoryScreen(state)
+        LogHistoryScreen(state) {
+          navController.navigate(it.route)
+        }
       }
     }
   }
