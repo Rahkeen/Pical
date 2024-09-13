@@ -3,6 +3,7 @@ package dev.supergooey.caloriesnap.features.dailylog
 import android.Manifest
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutQuint
@@ -11,6 +12,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -91,7 +96,7 @@ import java.time.LocalDate
 @Composable
 private fun DailyLogScreenPreview() {
   CalorieSnapTheme {
-    SharedTransitionScope {
+    SharedTransitionLayout {
       AnimatedContent(targetState = true) { state ->
         DailyLogScreen(
           state = DailyLogFeature.State(
@@ -106,7 +111,7 @@ private fun DailyLogScreenPreview() {
               MealLog(id = 4, foodTitle = "Item Five", valid = true),
             )
           ),
-          sharedTransitionScope = this@SharedTransitionScope,
+          sharedTransitionScope = this@SharedTransitionLayout,
           animatedVisibilityScope = this@AnimatedContent,
           action = {},
           navigate = {}
@@ -132,7 +137,18 @@ fun DailyLogScreen(
       },
       floatingActionButton = {
         if (state.isToday) {
-          PicalFab(navigate)
+          with(animatedVisibilityScope) {
+            PicalFab(
+              modifier = Modifier
+                .renderInSharedTransitionScopeOverlay()
+                .animateEnterExit(
+                  enter = slideInVertically { it } + fadeIn(),
+                  exit = slideOutVertically { it } + fadeOut()
+                )
+              ,
+              navigate = navigate
+            )
+          }
         }
       }
     ) { paddingValues ->
@@ -185,10 +201,13 @@ fun DailyLogScreen(
 }
 
 @Composable
-private fun PicalFab(navigate: (DailyLogFeature.Location) -> Unit) {
+private fun PicalFab(
+  modifier: Modifier = Modifier,
+  navigate: (DailyLogFeature.Location) -> Unit
+) {
   if (LocalInspectionMode.current) {
     Box(
-      modifier = Modifier
+      modifier = modifier
         .size(80.dp)
         .clip(CircleShape)
         .background(color = MaterialTheme.colorScheme.tertiaryContainer)
@@ -205,7 +224,7 @@ private fun PicalFab(navigate: (DailyLogFeature.Location) -> Unit) {
   } else {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     Box(
-      modifier = Modifier
+      modifier = modifier
         .size(80.dp)
         .clip(CircleShape)
         .background(color = MaterialTheme.colorScheme.tertiaryContainer)
