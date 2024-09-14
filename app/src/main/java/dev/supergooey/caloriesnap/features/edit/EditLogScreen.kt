@@ -110,8 +110,8 @@ fun EditLogScreen(
                   resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
                   boundsTransform = { _, _ ->
                     spring(
-                      stiffness = Spring.StiffnessMediumLow,
-                      dampingRatio = Spring.DampingRatioNoBouncy
+                      stiffness = Spring.StiffnessLow,
+                      dampingRatio = Spring.DampingRatioLowBouncy
                     )
                   }
                 )
@@ -139,8 +139,8 @@ fun EditLogScreen(
                       animatedVisibilityScope = animatedVisibilityScope,
                       boundsTransform = { _, _ ->
                         spring(
-                          stiffness = Spring.StiffnessMediumLow,
-                          dampingRatio = Spring.DampingRatioNoBouncy
+                          stiffness = Spring.StiffnessLow,
+                          dampingRatio = Spring.DampingRatioLowBouncy
                         )
                       }
                     )

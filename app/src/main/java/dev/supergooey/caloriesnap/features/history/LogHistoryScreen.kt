@@ -209,7 +209,11 @@ fun HistoryScreenRow(
           animatedVisibilityScope = animatedVisibilityScope,
           resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
           boundsTransform = { _, _ ->
-            tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
+//            tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
+            spring(
+              stiffness = Spring.StiffnessLow,
+              dampingRatio = Spring.DampingRatioLowBouncy
+            )
           }
         )
         .clip(RoundedCornerShape(24.dp))
@@ -220,8 +224,7 @@ fun HistoryScreenRow(
         ) {
           onClick()
         }
-        .padding(vertical = 8.dp)
-      ,
+        .padding(vertical = 8.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -256,7 +259,10 @@ fun HistoryScreenRow(
                     state = rememberSharedContentState(log.imageUri!!),
                     animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ ->
-                      spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                      spring(
+                        stiffness = Spring.StiffnessLow,
+                        dampingRatio = Spring.DampingRatioLowBouncy
+                      )
                     }
                   )
                   .graphicsLayer {
