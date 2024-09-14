@@ -10,7 +10,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+/releases
 
 # Project Keys and Things
 project.properties
+keystore.properties
 
