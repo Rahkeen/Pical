@@ -212,7 +212,7 @@ fun HistoryScreenRow(
 //            tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
             spring(
               stiffness = Spring.StiffnessLow,
-              dampingRatio = Spring.DampingRatioLowBouncy
+              dampingRatio = Spring.DampingRatioNoBouncy
             )
           }
         )
@@ -261,7 +261,7 @@ fun HistoryScreenRow(
                     boundsTransform = { _, _ ->
                       spring(
                         stiffness = Spring.StiffnessLow,
-                        dampingRatio = Spring.DampingRatioLowBouncy
+                        dampingRatio = Spring.DampingRatioNoBouncy
                       )
                     }
                   )

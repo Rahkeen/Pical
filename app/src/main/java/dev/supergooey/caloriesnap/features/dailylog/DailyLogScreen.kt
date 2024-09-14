@@ -164,7 +164,7 @@ fun DailyLogScreen(
             resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
             boundsTransform = { _, _ ->
 //              tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
-              spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+              spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
             }
           )
           .clip(RoundedCornerShape(28.dp)),
@@ -620,7 +620,7 @@ fun DailyLogRow3(
           boundsTransform = { _, _ ->
             spring(
               stiffness = Spring.StiffnessLow,
-              dampingRatio = Spring.DampingRatioLowBouncy
+              dampingRatio = Spring.DampingRatioNoBouncy
             )
           }
         )
@@ -709,7 +709,7 @@ fun DailyLogRow3(
                 state = rememberSharedContentState(log.imageUri!!),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ ->
-                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
                 }
               )
               .fillMaxHeight()
