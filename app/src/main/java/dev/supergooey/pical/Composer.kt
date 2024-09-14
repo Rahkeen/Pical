@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dev.supergooey.caloriesnap
+package dev.supergooey.pical
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,15 +23,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalMinimumInteractiveComponentEnforcement
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -50,7 +45,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.pical.ui.theme.PicalTheme
 
 @Composable
 fun Composer(
@@ -141,7 +136,7 @@ fun WithTextStyle(
 private fun ComposerPreview() {
   var value by remember { mutableStateOf("Hello there") }
 
-  CalorieSnapTheme {
+  PicalTheme {
     Composer(
       value = value,
       onValueChange = { value = it },

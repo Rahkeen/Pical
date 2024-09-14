@@ -1,5 +1,6 @@
-package dev.supergooey.caloriesnap
+package dev.supergooey.pical
 
+import dev.supergooey.pical.BuildConfig
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

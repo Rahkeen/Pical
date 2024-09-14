@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.ui.theme
+package dev.supergooey.pical.ui.theme
 
 import android.graphics.Path
 import android.view.animation.PathInterpolator

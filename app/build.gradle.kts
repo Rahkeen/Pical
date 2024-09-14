@@ -13,11 +13,11 @@ ksp {
 }
 
 android {
-  namespace = "dev.supergooey.caloriesnap"
+  namespace = "dev.supergooey.pical"
   compileSdk = 35
 
   defaultConfig {
-    applicationId = "dev.supergooey.caloriesnap"
+    applicationId = "dev.supergooey.pical"
     minSdk = 33
     targetSdk = 35
     versionCode = 1

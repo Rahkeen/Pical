@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap
+package dev.supergooey.pical
 
 import android.content.Context
 import androidx.room.AutoMigration
@@ -122,7 +122,6 @@ abstract class MealLogDatabase : RoomDatabase() {
             MealLogDatabase::class.java,
             "meal_log_database"
           )
-          .fallbackToDestructiveMigration()
           .build()
         INSTANCE = instance
         instance

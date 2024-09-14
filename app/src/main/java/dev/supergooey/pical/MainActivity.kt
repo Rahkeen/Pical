@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap
+package dev.supergooey.pical
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,21 +25,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import dev.supergooey.caloriesnap.features.capture.CaptureFeature
-import dev.supergooey.caloriesnap.features.capture.CaptureScreen
-import dev.supergooey.caloriesnap.features.capture.CaptureViewModel
-import dev.supergooey.caloriesnap.features.dailylog.DailyLogScreen
-import dev.supergooey.caloriesnap.features.dailylog.DailyLogViewModel
-import dev.supergooey.caloriesnap.features.edit.EditLogFeature
-import dev.supergooey.caloriesnap.features.edit.EditLogScreen
-import dev.supergooey.caloriesnap.features.edit.EditLogViewModel
-import dev.supergooey.caloriesnap.features.history.LogHistoryFeature
-import dev.supergooey.caloriesnap.features.history.LogHistoryScreen
-import dev.supergooey.caloriesnap.features.history.LogHistoryViewModel
-import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
-import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
-import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
-import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
+import dev.supergooey.pical.features.capture.CaptureFeature
+import dev.supergooey.pical.features.capture.CaptureScreen
+import dev.supergooey.pical.features.capture.CaptureViewModel
+import dev.supergooey.pical.features.dailylog.DailyLogScreen
+import dev.supergooey.pical.features.dailylog.DailyLogViewModel
+import dev.supergooey.pical.features.edit.EditLogFeature
+import dev.supergooey.pical.features.edit.EditLogScreen
+import dev.supergooey.pical.features.edit.EditLogViewModel
+import dev.supergooey.pical.features.history.LogHistoryFeature
+import dev.supergooey.pical.features.history.LogHistoryScreen
+import dev.supergooey.pical.features.history.LogHistoryViewModel
+import dev.supergooey.pical.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.pical.ui.theme.DURATION_LONG
+import dev.supergooey.pical.ui.theme.EmphasizedEasing
+import dev.supergooey.pical.ui.theme.PicalTheme
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      CalorieSnapTheme {
+      PicalTheme {
         App()
       }
     }
@@ -200,7 +200,7 @@ fun App() {
 @Preview
 @Composable
 fun AppPreview() {
-  CalorieSnapTheme {
+  PicalTheme {
     App()
   }
 }

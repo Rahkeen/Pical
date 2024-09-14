@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.features.dailylog
+package dev.supergooey.pical.features.dailylog
 
 import android.Manifest
 import androidx.compose.animation.AnimatedContent
@@ -83,21 +83,21 @@ import androidx.graphics.shapes.circle
 import coil.compose.AsyncImage
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import dev.supergooey.caloriesnap.MealLog
-import dev.supergooey.caloriesnap.R
-import dev.supergooey.caloriesnap.features.history.SharedTransitionPreviewHelper
-import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
-import dev.supergooey.caloriesnap.ui.theme.CoolRed
-import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
-import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
-import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
+import dev.supergooey.pical.MealLog
+import dev.supergooey.pical.R
+import dev.supergooey.pical.features.history.SharedTransitionPreviewHelper
+import dev.supergooey.pical.ui.theme.CoolRed
+import dev.supergooey.pical.ui.theme.DURATION_LONG
+import dev.supergooey.pical.ui.theme.EmphasizedEasing
+import dev.supergooey.pical.ui.theme.MorphPolygonShape
+import dev.supergooey.pical.ui.theme.PicalTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @Preview
 @Composable
 private fun DailyLogScreenPreview() {
-  CalorieSnapTheme {
+  PicalTheme {
     SharedTransitionLayout {
       AnimatedContent(targetState = true) { state ->
         DailyLogScreen(
@@ -164,7 +164,6 @@ fun DailyLogScreen(
             resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
             boundsTransform = { _, _ ->
               tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing)
-//              spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
             }
           )
           .clip(RoundedCornerShape(28.dp)),
@@ -256,7 +255,7 @@ private fun PicalFab(
 @Preview
 @Composable
 private fun PicalTopBarPreview() {
-  CalorieSnapTheme {
+  PicalTheme {
     PicalTopBar(
       state = DailyLogFeature.State(
         dayDisplay = "Today",
@@ -338,7 +337,7 @@ private fun PicalTopBar(
 @Preview
 @Composable
 fun DailyLogRowOptions() {
-  CalorieSnapTheme {
+  PicalTheme {
     val log = MealLog(
       foodTitle = "Big Bibimbap Energy",
       totalCalories = 600,
@@ -362,7 +361,7 @@ fun DailyLogRowOptions() {
 @Preview
 @Composable
 private fun DailyLogRowPreview() {
-  CalorieSnapTheme {
+  PicalTheme {
     DailyLogRow(
       log = MealLog(
         foodTitle = "Mexican Rice Bowl",
@@ -482,7 +481,7 @@ private fun DailyLogRow(
 @Preview
 @Composable
 private fun DailyLogRowPreview2() {
-  CalorieSnapTheme {
+  PicalTheme {
     DailyLogRow2(
       log = MealLog(
         foodTitle = "Mexican Rice Bowl",
@@ -571,7 +570,7 @@ private fun DailyLogRow2(
 @Composable
 private fun DailyLogRowPreview3() {
   SharedTransitionPreviewHelper { sharedTransitionScope, animatedVisibilityScope ->
-    CalorieSnapTheme {
+    PicalTheme {
       DailyLogRow3(
         log = MealLog(
           foodTitle = "Big Bibimbap Energy",
@@ -709,7 +708,10 @@ fun DailyLogRow3(
                 state = rememberSharedContentState(log.imageUri!!),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ ->
-                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
+                  spring(
+                    stiffness = Spring.StiffnessLow,
+                    dampingRatio = Spring.DampingRatioNoBouncy
+                  )
                 }
               )
               .fillMaxHeight()
@@ -723,7 +725,7 @@ fun DailyLogRow3(
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
           Text(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier.skipToLookaheadSize().wrapContentSize(),
             textAlign = TextAlign.Start,
             text = log.foodTitle!!,
             maxLines = 2,
@@ -733,7 +735,7 @@ fun DailyLogRow3(
             fontSize = 14.sp,
           )
           Text(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier.skipToLookaheadSize().wrapContentSize(),
             text = "${log.totalCalories} cal",
             color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.displayMedium,

@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap
+package dev.supergooey.pical
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -56,7 +56,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.pical.ui.theme.PicalTheme
 import java.util.UUID
 
 
@@ -199,7 +199,7 @@ fun MessageComposerDemo() {
   var isSending by remember { mutableStateOf(false) }
   var id = remember { UUID.randomUUID().toString() }
 
-  CalorieSnapTheme {
+  PicalTheme {
     SharedTransitionLayout {
       AnimatedContent(
         targetState = isSending,

@@ -16,13 +16,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"
-        android:theme="@style/Theme.CalorieSnap">
+        android:theme="@style/Theme.Pical">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="userPortrait"
+            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.CalorieSnap">
+            android:theme="@style/Theme.Pical">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

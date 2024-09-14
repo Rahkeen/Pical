@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.features.capture
+package dev.supergooey.pical.features.capture
 
 import android.graphics.Bitmap
 import android.util.Base64
@@ -6,15 +6,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dev.supergooey.caloriesnap.CameraStore
-import dev.supergooey.caloriesnap.ImageSource
-import dev.supergooey.caloriesnap.ImageToCalorieClient
-import dev.supergooey.caloriesnap.MealLog
-import dev.supergooey.caloriesnap.MealLogDatabase
-import dev.supergooey.caloriesnap.MealResponse
-import dev.supergooey.caloriesnap.Message
-import dev.supergooey.caloriesnap.MessageContent
-import dev.supergooey.caloriesnap.MessagesRequest
+import dev.supergooey.pical.CameraStore
+import dev.supergooey.pical.ImageSource
+import dev.supergooey.pical.ImageToCalorieClient
+import dev.supergooey.pical.MealLog
+import dev.supergooey.pical.MealLogDatabase
+import dev.supergooey.pical.MealResponse
+import dev.supergooey.pical.Message
+import dev.supergooey.pical.MessageContent
+import dev.supergooey.pical.MessagesRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update

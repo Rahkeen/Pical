@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.features.edit
+package dev.supergooey.pical.features.edit
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
@@ -48,16 +48,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import dev.supergooey.caloriesnap.R
-import dev.supergooey.caloriesnap.WithTextStyle
-import dev.supergooey.caloriesnap.features.history.SharedTransitionPreviewHelper
-import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.pical.R
+import dev.supergooey.pical.WithTextStyle
+import dev.supergooey.pical.features.history.SharedTransitionPreviewHelper
+import dev.supergooey.pical.ui.theme.PicalTheme
 
 @Preview
 @Composable
 private fun EditLogScreenPreview() {
   SharedTransitionPreviewHelper { sharedTransitionScope, animatedVisibilityScope ->
-    CalorieSnapTheme {
+    PicalTheme {
       EditLogScreen(
         state = EditLogFeature.State(
           title = "Big Bibimbap Energy"
@@ -161,7 +161,7 @@ fun EditLogScreen(
                   color = MaterialTheme.colorScheme.onSurface
                 ) {
                   LogEditField(
-                    modifier = Modifier.wrapContentSize(),
+                    modifier = Modifier.skipToLookaheadSize().wrapContentSize(),
                     value = state.title,
                     onValueChanged = { actions(EditLogFeature.Action.EditTitle(it)) },
                     hint = "Sarcastic Food Title",
@@ -239,7 +239,7 @@ fun EditLogScreen(
 private fun LogEditFieldPreview() {
   val hint by remember { mutableStateOf("Title") }
   var text by remember { mutableStateOf("") }
-  CalorieSnapTheme {
+  PicalTheme {
     WithTextStyle(
       style = MaterialTheme.typography.displayMedium,
       color = MaterialTheme.colorScheme.onErrorContainer

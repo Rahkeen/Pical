@@ -1,13 +1,13 @@
-package dev.supergooey.caloriesnap.features.history
+package dev.supergooey.pical.features.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dev.supergooey.caloriesnap.MealLog
-import dev.supergooey.caloriesnap.MealLogDao
-import dev.supergooey.caloriesnap.MealLogsByDay
-import dev.supergooey.caloriesnap.features.dailylog.isToday
-import dev.supergooey.caloriesnap.features.dailylog.toDisplay
+import dev.supergooey.pical.MealLog
+import dev.supergooey.pical.MealLogDao
+import dev.supergooey.pical.MealLogsByDay
+import dev.supergooey.pical.features.dailylog.isToday
+import dev.supergooey.pical.features.dailylog.toDisplay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn

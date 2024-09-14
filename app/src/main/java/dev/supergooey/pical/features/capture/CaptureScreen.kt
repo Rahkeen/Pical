@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.features.capture
+package dev.supergooey.pical.features.capture
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -94,24 +94,23 @@ import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.circle
 import androidx.graphics.shapes.star
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import dev.supergooey.caloriesnap.Composer
-import dev.supergooey.caloriesnap.MealResponse
-import dev.supergooey.caloriesnap.Message
-import dev.supergooey.caloriesnap.MessageContent
-import dev.supergooey.caloriesnap.R
-import dev.supergooey.caloriesnap.magnifyShader
-import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
-import dev.supergooey.caloriesnap.ui.theme.CoolGreen
-import dev.supergooey.caloriesnap.ui.theme.CoolOrange
-import dev.supergooey.caloriesnap.ui.theme.CoolRed
-import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
+import dev.supergooey.pical.Composer
+import dev.supergooey.pical.MealResponse
+import dev.supergooey.pical.Message
+import dev.supergooey.pical.MessageContent
+import dev.supergooey.pical.R
+import dev.supergooey.pical.magnifyShader
+import dev.supergooey.pical.ui.theme.CoolGreen
+import dev.supergooey.pical.ui.theme.CoolRed
+import dev.supergooey.pical.ui.theme.MorphPolygonShape
+import dev.supergooey.pical.ui.theme.PicalTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Preview
 @Composable
 fun CaptureScreenAnalyzePreview() {
-  CalorieSnapTheme(darkTheme = true) {
+  PicalTheme(darkTheme = true) {
     val bitmap = ImageBitmap.imageResource(R.drawable.bibimbap).asAndroidBitmap()
     var state by remember {
       mutableStateOf(
@@ -219,7 +218,7 @@ fun CaptureScreen(
     }
   }
 
-  CalorieSnapTheme(darkTheme = true) {
+  PicalTheme(darkTheme = true) {
     SharedTransitionLayout {
       transition.AnimatedContent(
         transitionSpec = { fadeIn().togetherWith(fadeOut()) },
