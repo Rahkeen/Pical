@@ -102,6 +102,8 @@ dependencies {
   implementation(libs.coil.compose)
   ksp(libs.room.compiler)
 
+  implementation(libs.revenucat)
+
   testImplementation(libs.junit)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.espresso.core)
