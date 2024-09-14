@@ -34,16 +34,17 @@ android {
 
   buildTypes {
     debug {
-      isDebuggable = false
+      isDebuggable = true
     }
     release {
       isDebuggable = false
-      isMinifyEnabled = false
+      isMinifyEnabled = true
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),
         "proguard-rules.pro",
         "retrofit.pro"
       )
+      signingConfig = signingConfigs.getByName("debug")
     }
   }
   compileOptions {
