@@ -38,6 +38,7 @@ import dev.supergooey.caloriesnap.features.history.LogHistoryScreen
 import dev.supergooey.caloriesnap.features.history.LogHistoryViewModel
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
 import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import java.time.LocalDate
 
@@ -48,7 +49,6 @@ class MainActivity : ComponentActivity() {
     setContent {
       CalorieSnapTheme {
         App()
-//        CameraScreenAnalyzePreview()
       }
     }
   }
@@ -65,10 +65,10 @@ fun App() {
         .background(color = MaterialTheme.colorScheme.background),
       navController = navController,
       enterTransition = {
-        fadeIn(animationSpec = tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing))
+        fadeIn(animationSpec = tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing))
       },
       exitTransition = {
-        fadeOut(animationSpec = tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing))
+        fadeOut(animationSpec = tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing))
       },
       startDestination = "logs",
     ) {

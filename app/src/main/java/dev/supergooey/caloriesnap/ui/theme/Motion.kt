@@ -4,7 +4,8 @@ import android.graphics.Path
 import android.view.animation.PathInterpolator
 import androidx.compose.animation.core.Easing
 
-const val DURATION_EXTRA_LONG = 800
+const val DURATION_LONG = 700
+const val DURATION_EXTRA_LONG = 900
 
 private val emphasizedPath = Path().apply {
   moveTo(0f, 0f)

@@ -88,7 +88,7 @@ import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.features.history.SharedTransitionPreviewHelper
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
-import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
 import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 import kotlinx.coroutines.launch
@@ -163,8 +163,8 @@ fun DailyLogScreen(
             placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
             resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
             boundsTransform = { _, _ ->
-//              tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
-              spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
+              tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing)
+//              spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
             }
           )
           .clip(RoundedCornerShape(28.dp)),

@@ -45,7 +45,7 @@ import coil.compose.AsyncImage
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
-import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
 import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import java.time.LocalDate
 
@@ -209,11 +209,11 @@ fun HistoryScreenRow(
           animatedVisibilityScope = animatedVisibilityScope,
           resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
           boundsTransform = { _, _ ->
-//            tween(durationMillis = DURATION_EXTRA_LONG, easing = EmphasizedEasing)
-            spring(
-              stiffness = Spring.StiffnessLow,
-              dampingRatio = Spring.DampingRatioNoBouncy
-            )
+            tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing)
+//            spring(
+//              stiffness = Spring.StiffnessLow,
+//              dampingRatio = Spring.DampingRatioNoBouncy
+//            )
           }
         )
         .clip(RoundedCornerShape(24.dp))
