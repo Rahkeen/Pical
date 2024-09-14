@@ -164,7 +164,6 @@ fun DailyLogScreen(
             resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
             boundsTransform = { _, _ ->
               tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing)
-//              spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
             }
           )
           .clip(RoundedCornerShape(28.dp)),
@@ -709,7 +708,10 @@ fun DailyLogRow3(
                 state = rememberSharedContentState(log.imageUri!!),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ ->
-                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
+                  spring(
+                    stiffness = Spring.StiffnessLow,
+                    dampingRatio = Spring.DampingRatioNoBouncy
+                  )
                 }
               )
               .fillMaxHeight()
@@ -723,7 +725,7 @@ fun DailyLogRow3(
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
           Text(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier.skipToLookaheadSize().wrapContentSize(),
             textAlign = TextAlign.Start,
             text = log.foodTitle!!,
             maxLines = 2,
@@ -733,7 +735,7 @@ fun DailyLogRow3(
             fontSize = 14.sp,
           )
           Text(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier.skipToLookaheadSize().wrapContentSize(),
             text = "${log.totalCalories} cal",
             color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.displayMedium,

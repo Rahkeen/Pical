@@ -161,7 +161,7 @@ fun EditLogScreen(
                   color = MaterialTheme.colorScheme.onSurface
                 ) {
                   LogEditField(
-                    modifier = Modifier.wrapContentSize(),
+                    modifier = Modifier.skipToLookaheadSize().wrapContentSize(),
                     value = state.title,
                     onValueChanged = { actions(EditLogFeature.Action.EditTitle(it)) },
                     hint = "Sarcastic Food Title",
