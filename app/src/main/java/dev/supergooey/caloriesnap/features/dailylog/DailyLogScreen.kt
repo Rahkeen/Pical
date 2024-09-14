@@ -1,7 +1,9 @@
 package dev.supergooey.caloriesnap.features.dailylog
 
+import android.Manifest
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutQuint
@@ -10,6 +12,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -79,34 +85,40 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.supergooey.caloriesnap.MealLog
 import dev.supergooey.caloriesnap.R
+import dev.supergooey.caloriesnap.features.history.SharedTransitionPreviewHelper
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
+import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
+import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @Preview
 @Composable
 private fun DailyLogScreenPreview() {
   CalorieSnapTheme {
-    SharedTransitionScope {
-     AnimatedContent(targetState = true) { state ->
-       DailyLogScreen(
-         state = DailyLogFeature.State(
-           dayDisplay = "Today",
-           logs = listOf(
-             MealLog(id = 0, foodTitle = "Item One", valid = true),
-             MealLog(id = 1, foodTitle = "Item Two", valid = true),
-             MealLog(id = 2, foodTitle = "Item Three", valid = true),
-             MealLog(id = 3, foodTitle = "Item Four", valid = true),
-             MealLog(id = 4, foodTitle = "Item Five", valid = true),
-           )
-         ),
-         sharedTransitionScope = this@SharedTransitionScope,
-         animatedVisibilityScope = this@AnimatedContent,
-         action = {},
-         navigate = {}
-       )
-     }
+    SharedTransitionLayout {
+      AnimatedContent(targetState = true) { state ->
+        DailyLogScreen(
+          state = DailyLogFeature.State(
+            dayDisplay = "Today",
+            isToday = true,
+            date = LocalDate.now(),
+            logs = listOf(
+              MealLog(id = 0, foodTitle = "Item One", valid = true),
+              MealLog(id = 1, foodTitle = "Item Two", valid = true),
+              MealLog(id = 2, foodTitle = "Item Three", valid = true),
+              MealLog(id = 3, foodTitle = "Item Four", valid = true),
+              MealLog(id = 4, foodTitle = "Item Five", valid = true),
+            )
+          ),
+          sharedTransitionScope = this@SharedTransitionLayout,
+          animatedVisibilityScope = this@AnimatedContent,
+          action = {},
+          navigate = {}
+        )
+      }
     }
   }
 }
@@ -119,90 +131,124 @@ fun DailyLogScreen(
   action: (DailyLogFeature.Action) -> Unit,
   navigate: (DailyLogFeature.Location) -> Unit
 ) {
-  Scaffold(
-    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-    topBar = {
-      PicalTopBar(state, navigate)
-    },
-    floatingActionButton = {
-      if (LocalInspectionMode.current) {
-        Box(
-          modifier = Modifier
-            .size(80.dp)
-            .clip(CircleShape)
-            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
-            .clickable {},
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            modifier = Modifier.size(32.dp),
-            painter = painterResource(R.drawable.ic_capture),
-            tint = MaterialTheme.colorScheme.tertiary,
-            contentDescription = "Capture"
-          )
+  with(sharedTransitionScope) {
+    Scaffold(
+      containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+      topBar = {
+        PicalTopBar(state, navigate)
+      },
+      floatingActionButton = {
+        if (state.isToday) {
+          with(animatedVisibilityScope) {
+            PicalFab(
+              modifier = Modifier
+                .renderInSharedTransitionScopeOverlay()
+                .animateEnterExit(
+                  enter = slideInVertically { it } + fadeIn(),
+                  exit = slideOutVertically { it } + fadeOut()
+                )
+              ,
+              navigate = navigate
+            )
+          }
         }
-      } else {
-        val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
-        Box(
-          modifier = Modifier
-            .size(80.dp)
-            .clip(CircleShape)
-            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
-            .clickable {
-              if (cameraPermissionState.status.isGranted) {
-                navigate(DailyLogFeature.Location.Camera)
-              } else {
-                cameraPermissionState.launchPermissionRequest()
-              }
-            },
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            modifier = Modifier.size(32.dp),
-            painter = painterResource(R.drawable.ic_capture),
-            tint = MaterialTheme.colorScheme.tertiary,
-            contentDescription = "Capture"
+      }
+    ) { paddingValues ->
+      Surface(
+        modifier = Modifier
+          .padding(paddingValues)
+          .sharedBounds(
+            sharedContentState = rememberSharedContentState(state.date),
+            animatedVisibilityScope = animatedVisibilityScope,
+            placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
+            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+            boundsTransform = { _, _ ->
+              tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing)
+//              spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
+            }
           )
+          .clip(RoundedCornerShape(28.dp)),
+      ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+          LazyColumn(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            item {
+              Spacer(modifier = Modifier.height(0.dp))
+            }
+            items(items = state.logs, key = { it.id }) { log ->
+              DailyLogRow3(
+                modifier = Modifier
+                  .animateItem()
+                  .fillMaxWidth()
+                  .wrapContentHeight(),
+                log = log,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                onClick = { navigate(DailyLogFeature.Location.Log(log.id)) },
+                onDelete = { action(DailyLogFeature.Action.DeleteItem(log)) }
+              )
+            }
+            item {
+              Spacer(
+                modifier = Modifier
+                  .height(80.dp)
+                  .windowInsetsPadding(WindowInsets.navigationBars)
+              )
+            }
+          }
         }
       }
     }
-  ) { paddingValues ->
-    Surface(
-      modifier = Modifier.padding(paddingValues),
-      shape = RoundedCornerShape(
-        28.dp
-      )
+  }
+}
+
+@Composable
+private fun PicalFab(
+  modifier: Modifier = Modifier,
+  navigate: (DailyLogFeature.Location) -> Unit
+) {
+  if (LocalInspectionMode.current) {
+    Box(
+      modifier = modifier
+        .size(80.dp)
+        .clip(CircleShape)
+        .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+        .clickable {},
+      contentAlignment = Alignment.Center
     ) {
-      Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-          modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp),
-          verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          item {
-            Spacer(modifier = Modifier.height(0.dp))
+      Icon(
+        modifier = Modifier.size(32.dp),
+        painter = painterResource(R.drawable.ic_capture),
+        tint = MaterialTheme.colorScheme.tertiary,
+        contentDescription = "Capture"
+      )
+    }
+  } else {
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    Box(
+      modifier = modifier
+        .size(80.dp)
+        .clip(CircleShape)
+        .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+        .clickable {
+          if (cameraPermissionState.status.isGranted) {
+            navigate(DailyLogFeature.Location.Camera)
+          } else {
+            cameraPermissionState.launchPermissionRequest()
           }
-          items(items = state.logs, key = { it.id }) { log ->
-            DailyLogRow3(
-              modifier = Modifier
-                .animateItem()
-                .fillMaxWidth()
-                .wrapContentHeight(),
-              log = log,
-              onClick = { navigate(DailyLogFeature.Location.Log(log.id)) },
-              onDelete = { action(DailyLogFeature.Action.DeleteItem(log)) }
-            )
-          }
-          item {
-            Spacer(
-              modifier = Modifier
-                .height(80.dp)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-            )
-          }
-        }
-      }
+        },
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(
+        modifier = Modifier.size(32.dp),
+        painter = painterResource(R.drawable.ic_capture),
+        tint = MaterialTheme.colorScheme.tertiary,
+        contentDescription = "Capture"
+      )
     }
   }
 }
@@ -214,6 +260,8 @@ private fun PicalTopBarPreview() {
     PicalTopBar(
       state = DailyLogFeature.State(
         dayDisplay = "Today",
+        isToday = true,
+        date = LocalDate.now(),
         logs = listOf(
           MealLog(id = 0, foodTitle = "Item One", valid = true),
           MealLog(id = 1, foodTitle = "Item Two", valid = true),
@@ -238,21 +286,23 @@ private fun PicalTopBar(
       .fillMaxWidth()
       .padding(16.dp),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Box(
-      modifier = Modifier
-        .clip(CircleShape)
-        .background(color = MaterialTheme.colorScheme.primaryContainer)
-        .clickable { navigate(DailyLogFeature.Location.History) }
-        .padding(12.dp)
-    ) {
-      Icon(
-        painter = painterResource(R.drawable.ic_history),
-        tint = MaterialTheme.colorScheme.secondary,
-        contentDescription = ""
-      )
+    if (state.isToday) {
+      Box(
+        modifier = Modifier
+          .clip(CircleShape)
+          .background(color = MaterialTheme.colorScheme.primaryContainer)
+          .clickable { navigate(DailyLogFeature.Location.History) }
+          .padding(12.dp)
+      ) {
+        Icon(
+          painter = painterResource(R.drawable.ic_history),
+          tint = MaterialTheme.colorScheme.secondary,
+          contentDescription = ""
+        )
+      }
     }
+    Spacer(Modifier.weight(1f))
     Column(
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -267,17 +317,20 @@ private fun PicalTopBar(
         style = MaterialTheme.typography.displayLarge
       )
     }
-    Box(
-      modifier = Modifier
-        .clip(CircleShape)
-        .background(color = MaterialTheme.colorScheme.primaryContainer)
-        .padding(12.dp)
-    ) {
-      Icon(
-        painter = painterResource(R.drawable.ic_settings),
-        tint = MaterialTheme.colorScheme.secondary,
-        contentDescription = ""
-      )
+    Spacer(Modifier.weight(1f))
+    if (state.isToday) {
+      Box(
+        modifier = Modifier
+          .clip(CircleShape)
+          .background(color = MaterialTheme.colorScheme.primaryContainer)
+          .padding(12.dp)
+      ) {
+        Icon(
+          painter = painterResource(R.drawable.ic_settings),
+          tint = MaterialTheme.colorScheme.secondary,
+          contentDescription = ""
+        )
+      }
     }
   }
 }
@@ -301,7 +354,6 @@ fun DailyLogRowOptions() {
       ) {
         DailyLogRow(log = log)
         DailyLogRow2(log = log)
-        DailyLogRow3(log = log)
       }
     }
   }
@@ -518,14 +570,18 @@ private fun DailyLogRow2(
 @PreviewLightDark
 @Composable
 private fun DailyLogRowPreview3() {
-  CalorieSnapTheme {
-    DailyLogRow3(
-      log = MealLog(
-        foodTitle = "Big Bibimbap Energy",
-        totalCalories = 600,
-        valid = true
+  SharedTransitionPreviewHelper { sharedTransitionScope, animatedVisibilityScope ->
+    CalorieSnapTheme {
+      DailyLogRow3(
+        log = MealLog(
+          foodTitle = "Big Bibimbap Energy",
+          totalCalories = 600,
+          valid = true
+        ),
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope
       )
-    )
+    }
   }
 }
 
@@ -533,6 +589,8 @@ private fun DailyLogRowPreview3() {
 fun DailyLogRow3(
   modifier: Modifier = Modifier,
   log: MealLog,
+  sharedTransitionScope: SharedTransitionScope,
+  animatedVisibilityScope: AnimatedVisibilityScope,
   showEdit: Boolean = true,
   onClick: () -> Unit = {},
   onDelete: () -> Unit = {},
@@ -550,149 +608,169 @@ fun DailyLogRow3(
       haptics.performHapticFeedback(HapticFeedbackType.LongPress)
     }
   }
-  Box(
-    modifier = modifier
-      .fillMaxWidth()
-      .height(100.dp)
-      .clip(RoundedCornerShape(20.dp))
-      .background(color = CoolRed.copy(alpha = 0.3f))
-  ) {
+  with(sharedTransitionScope) {
     Box(
-      modifier = Modifier
-        .fillMaxWidth(0.25f)
-        .fillMaxHeight(),
-      contentAlignment = Alignment.Center
-    ) {
-      Icon(
-        modifier = Modifier
-          .graphicsLayer {
-            val outputScale = 0.5f + (0.2f * progress)
-            scaleX = outputScale
-            scaleY = outputScale
-          }
-          .size(32.dp),
-        painter = painterResource(R.drawable.ic_trash_filled),
-        tint = color,
-        contentDescription = "Delete"
-      )
-    }
-    Row(
       modifier = modifier
-        .graphicsLayer {
-          val triggerPoint = size.width * 0.25f
-          translationX = minOf(dragOffset.value, triggerPoint)
-          progress = (translationX / triggerPoint).coerceIn(0f, 1f)
-          trigger = translationX >= triggerPoint
-        }
-        .fillMaxSize()
+        .fillMaxWidth()
+        .height(100.dp)
+        .sharedBounds(
+          sharedContentState = rememberSharedContentState(key = log.id),
+          animatedVisibilityScope = animatedVisibilityScope,
+          resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+          boundsTransform = { _, _ ->
+            spring(
+              stiffness = Spring.StiffnessLow,
+              dampingRatio = Spring.DampingRatioNoBouncy
+            )
+          }
+        )
         .clip(RoundedCornerShape(20.dp))
-        .background(MaterialTheme.colorScheme.surfaceContainer)
-        .clickable(
-          indication = ripple(color = MaterialTheme.colorScheme.secondaryContainer),
-          interactionSource = interactionSource
-        ) { onClick() }
-        .padding(8.dp)
-        .pointerInput(Unit) {
-          detectHorizontalDragGestures(
-            onDragStart = {},
-            onDragEnd = {
-              if (trigger) {
-                onDelete()
-              }
-              scope.launch {
-                dragOffset.animateTo(
-                  0f,
-                  animationSpec = spring(
-                    stiffness = Spring.StiffnessLow,
-                    dampingRatio = 0.8f
+        .background(color = CoolRed.copy(alpha = 0.3f))
+    ) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth(0.25f)
+          .fillMaxHeight(),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(
+          modifier = Modifier
+            .graphicsLayer {
+              val outputScale = 0.5f + (0.2f * progress)
+              scaleX = outputScale
+              scaleY = outputScale
+            }
+            .size(32.dp),
+          painter = painterResource(R.drawable.ic_trash_filled),
+          tint = color,
+          contentDescription = "Delete"
+        )
+      }
+      Row(
+        modifier = modifier
+          .graphicsLayer {
+            val triggerPoint = size.width * 0.25f
+            translationX = minOf(dragOffset.value, triggerPoint)
+            progress = (translationX / triggerPoint).coerceIn(0f, 1f)
+            trigger = translationX >= triggerPoint
+          }
+          .fillMaxSize()
+          .clip(RoundedCornerShape(20.dp))
+          .background(MaterialTheme.colorScheme.surfaceContainer)
+          .clickable(
+            indication = ripple(color = MaterialTheme.colorScheme.secondaryContainer),
+            interactionSource = interactionSource
+          ) { onClick() }
+          .padding(8.dp)
+          .pointerInput(Unit) {
+            detectHorizontalDragGestures(
+              onDragStart = {},
+              onDragEnd = {
+                if (trigger) {
+                  onDelete()
+                }
+                scope.launch {
+                  dragOffset.animateTo(
+                    0f,
+                    animationSpec = spring(
+                      stiffness = Spring.StiffnessLow,
+                      dampingRatio = 0.8f
+                    )
                   )
-                )
-              }
-            },
-            onHorizontalDrag = { _, dragAmount ->
-              scope.launch {
-                val update = dragOffset.value + dragAmount
-                if (update > 0) {
-                  dragOffset.snapTo(update)
+                }
+              },
+              onHorizontalDrag = { _, dragAmount ->
+                scope.launch {
+                  val update = dragOffset.value + dragAmount
+                  if (update > 0) {
+                    dragOffset.snapTo(update)
+                  }
                 }
               }
-            }
+            )
+          },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+      ) {
+        if (LocalInspectionMode.current) {
+          Image(
+            modifier = Modifier
+              .fillMaxHeight()
+              .aspectRatio(1f, matchHeightConstraintsFirst = true)
+              .clip(RoundedCornerShape(12.dp)),
+            painter = painterResource(R.drawable.bibimbap),
+            contentScale = ContentScale.Crop,
+            contentDescription = "food"
           )
-        },
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-      if (LocalInspectionMode.current) {
-        Image(
-          modifier = Modifier
-            .fillMaxHeight()
-            .aspectRatio(1f, matchHeightConstraintsFirst = true)
-            .clip(RoundedCornerShape(12.dp)),
-          painter = painterResource(R.drawable.bibimbap),
-          contentScale = ContentScale.Crop,
-          contentDescription = "food"
-        )
-      } else {
-        AsyncImage(
-          modifier = Modifier
-            .fillMaxHeight()
-            .aspectRatio(1f, matchHeightConstraintsFirst = true)
-            .clip(RoundedCornerShape(12.dp)),
-          model = log.imageUri,
-          contentScale = ContentScale.Crop,
-          contentDescription = "food"
-        )
+        } else {
+          AsyncImage(
+            modifier = Modifier
+              .sharedElement(
+                state = rememberSharedContentState(log.imageUri!!),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ ->
+                  spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy)
+                }
+              )
+              .fillMaxHeight()
+              .aspectRatio(1f, matchHeightConstraintsFirst = true)
+              .clip(RoundedCornerShape(12.dp)),
+            model = log.imageUri,
+            contentScale = ContentScale.Crop,
+            contentDescription = "food"
+          )
 
-      }
-      Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-          modifier = Modifier.wrapContentSize(),
-          textAlign = TextAlign.Start,
-          text = log.foodTitle!!,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.displayMedium,
-          color = MaterialTheme.colorScheme.onSurface,
-          fontSize = 14.sp,
-        )
-        Text(
-          modifier = Modifier.wrapContentSize(),
-          text = "${log.totalCalories} cal",
-          color = MaterialTheme.colorScheme.primary,
-          style = MaterialTheme.typography.displayMedium,
-          fontSize = 12.sp,
-          fontWeight = FontWeight.Medium
-        )
-      }
-
-      if (showEdit) {
-        val start = remember { RoundedPolygon.circle(numVertices = 6) }
-        val end = remember {
-          RoundedPolygon(
-            numVertices = 6,
-            rounding = CornerRounding(0.3f, smoothing = 1.0f)
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          Text(
+            modifier = Modifier.wrapContentSize(),
+            textAlign = TextAlign.Start,
+            text = log.foodTitle!!,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 14.sp,
+          )
+          Text(
+            modifier = Modifier.wrapContentSize(),
+            text = "${log.totalCalories} cal",
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.displayMedium,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
           )
         }
-        val morph = remember { Morph(start, end) }
-        val morphProgress by animateFloatAsState(
-          targetValue = if (pressed) 1f else 0f,
-          animationSpec = spring(),
-          label = "edit_shape"
-        )
-        Box(
-          modifier = Modifier
-            .align(Alignment.Bottom)
-            .size(36.dp)
-            .clip(shape = MorphPolygonShape(morph, morphProgress))
-            .background(color = MaterialTheme.colorScheme.secondaryContainer),
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            modifier = Modifier.size(16.dp),
-            painter = painterResource(R.drawable.ic_edit),
-            tint = MaterialTheme.colorScheme.secondary,
-            contentDescription = "Edit"
+
+        if (showEdit) {
+          val start = remember { RoundedPolygon.circle(numVertices = 6) }
+          val end = remember {
+            RoundedPolygon(
+              numVertices = 6,
+              rounding = CornerRounding(0.3f, smoothing = 1.0f)
+            )
+          }
+          val morph = remember { Morph(start, end) }
+          val morphProgress by animateFloatAsState(
+            targetValue = if (pressed) 1f else 0f,
+            animationSpec = spring(),
+            label = "edit_shape"
           )
+          Box(
+            modifier = Modifier
+              .align(Alignment.Bottom)
+              .size(36.dp)
+              .clip(shape = MorphPolygonShape(morph, morphProgress))
+              .background(color = MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              modifier = Modifier.size(16.dp),
+              painter = painterResource(R.drawable.ic_edit),
+              tint = MaterialTheme.colorScheme.secondary,
+              contentDescription = "Edit"
+            )
+          }
         }
       }
     }

@@ -1,11 +1,9 @@
-package dev.supergooey.caloriesnap
+package dev.supergooey.caloriesnap.features.capture
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
-import android.util.Base64
-import android.util.Log
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.camera.core.ImageCapture
@@ -15,7 +13,6 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
@@ -96,33 +93,29 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.circle
 import androidx.graphics.shapes.star
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavHostController
+import dev.supergooey.caloriesnap.Composer
+import dev.supergooey.caloriesnap.MealResponse
+import dev.supergooey.caloriesnap.Message
+import dev.supergooey.caloriesnap.MessageContent
+import dev.supergooey.caloriesnap.R
+import dev.supergooey.caloriesnap.magnifyShader
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
 import dev.supergooey.caloriesnap.ui.theme.CoolGreen
 import dev.supergooey.caloriesnap.ui.theme.CoolOrange
 import dev.supergooey.caloriesnap.ui.theme.CoolRed
 import dev.supergooey.caloriesnap.ui.theme.MorphPolygonShape
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import java.io.ByteArrayOutputStream
-import java.time.LocalDate
 
 @Preview
 @Composable
-fun CameraScreenAnalyzePreview() {
+fun CaptureScreenAnalyzePreview() {
   CalorieSnapTheme(darkTheme = true) {
     val bitmap = ImageBitmap.imageResource(R.drawable.bibimbap).asAndroidBitmap()
     var state by remember {
       mutableStateOf(
-        CameraFeature.State(
+        CaptureFeature.State(
           capturedPhoto = bitmap,
           mealResponse = MealResponse(
             foodTitle = "Bibimbap",
@@ -148,16 +141,16 @@ fun CameraScreenAnalyzePreview() {
               )
             ),
           ),
-          step = CameraFeatureStep.Analysis
+          step = CaptureFeatureStep.Analysis
         )
       )
     }
-    CameraScreen(
+    CaptureScreen(
       state = state,
       actions = { action ->
         when (action) {
-          is CameraFeature.Action.AnalyzePhoto -> {}
-          CameraFeature.Action.SendContextMessage -> {
+          is CaptureFeature.Action.AnalyzePhoto -> {}
+          CaptureFeature.Action.SendContextMessage -> {
             state = state.copy(
               contextMessage = "",
               messages = state.messages + Message(
@@ -167,25 +160,26 @@ fun CameraScreenAnalyzePreview() {
             )
           }
 
-          is CameraFeature.Action.UpdateContextMessage -> {
+          is CaptureFeature.Action.UpdateContextMessage -> {
             state = state.copy(
               contextMessage = action.message
             )
           }
 
-          CameraFeature.Action.LogMeal -> {}
-          is CameraFeature.Action.TakePhoto -> {}
+          CaptureFeature.Action.LogMeal -> {}
+          is CaptureFeature.Action.TakePhoto -> {}
         }
-      }
+      },
+      navigation = {}
     )
   }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun CameraScreen(
-  state: CameraFeature.State,
-  actions: (CameraFeature.Action) -> Unit
+fun CaptureScreen(
+  state: CaptureFeature.State,
+  actions: (CaptureFeature.Action) -> Unit,
+  navigation: (CaptureFeature.Location) -> Unit
 ) {
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
@@ -200,8 +194,8 @@ fun CameraScreen(
     label = "Image Radius"
   ) { step ->
     when (step) {
-      CameraFeatureStep.Camera -> 0.dp
-      CameraFeatureStep.Analysis -> 12.dp
+      CaptureFeatureStep.Camera -> 0.dp
+      CaptureFeatureStep.Analysis -> 12.dp
     }
   }
 
@@ -213,10 +207,16 @@ fun CameraScreen(
       object : ImageCapture.OnImageCapturedCallback() {
         override fun onCaptureSuccess(image: ImageProxy) {
           val bitmap = image.toBitmap().rotate(image.imageInfo.rotationDegrees)
-          actions(CameraFeature.Action.TakePhoto(bitmap))
+          actions(CaptureFeature.Action.TakePhoto(bitmap))
         }
       }
     )
+  }
+
+  LaunchedEffect(state.finished) {
+    if (state.finished) {
+      navigation(CaptureFeature.Location.Back)
+    }
   }
 
   CalorieSnapTheme(darkTheme = true) {
@@ -225,7 +225,7 @@ fun CameraScreen(
         transitionSpec = { fadeIn().togetherWith(fadeOut()) },
       ) { step ->
         when (step) {
-          CameraFeatureStep.Camera -> {
+          CaptureFeatureStep.Camera -> {
             Box(
               modifier = Modifier
                 .fillMaxSize()
@@ -280,7 +280,7 @@ fun CameraScreen(
                     label = ""
                   )
                   val buttonColor by animateColorAsState(
-                    targetValue = if (isPressed) CoolOrange else CoolRed,
+                    targetValue = if (isPressed) MaterialTheme.colorScheme.primary else CoolRed,
                     animationSpec = spring(),
                     label = ""
                   )
@@ -318,7 +318,7 @@ fun CameraScreen(
             }
           }
 
-          CameraFeatureStep.Analysis -> {
+          CaptureFeatureStep.Analysis -> {
             AnalysisStep(
               state = state,
               sharedTransitionScope = this@SharedTransitionLayout,
@@ -351,12 +351,12 @@ fun FrameTimer(
 
 @Composable
 fun AnalysisStep(
-  state: CameraFeature.State,
+  state: CaptureFeature.State,
   sharedTransitionScope: SharedTransitionScope,
   animatedVisibilityScope: AnimatedVisibilityScope,
   animationDuration: Int,
   cornerRadius: Dp,
-  actions: (CameraFeature.Action) -> Unit
+  actions: (CaptureFeature.Action) -> Unit
 ) {
   val shader = remember { RuntimeShader(magnifyShader) }
   val rotation = remember { Animatable(0f) }
@@ -365,7 +365,7 @@ fun AnalysisStep(
 
   LaunchedEffect(Unit) {
     delay(animationDuration.toLong())
-    actions(CameraFeature.Action.AnalyzePhoto(state.capturedPhoto!!))
+    actions(CaptureFeature.Action.AnalyzePhoto(state.capturedPhoto!!))
   }
 
   LaunchedEffect(state.loading) {
@@ -549,7 +549,7 @@ fun AnalysisStep(
                         bottomEndPercent = 50
                       )
                     )
-                    .clickable { actions(CameraFeature.Action.LogMeal) }
+                    .clickable { actions(CaptureFeature.Action.LogMeal) }
                     .background(color = CoolGreen)
                     .padding(vertical = 8.dp, horizontal = 16.dp)
                 ) {
@@ -576,8 +576,8 @@ fun AnalysisStep(
           .imePadding()
           .fillMaxWidth(),
         value = state.contextMessage,
-        onValueChange = { actions(CameraFeature.Action.UpdateContextMessage(it)) },
-        onSend = { actions(CameraFeature.Action.SendContextMessage) }
+        onValueChange = { actions(CaptureFeature.Action.UpdateContextMessage(it)) },
+        onSend = { actions(CaptureFeature.Action.SendContextMessage) }
       )
     }
   }
@@ -591,196 +591,3 @@ fun Bitmap.rotate(degrees: Int): Bitmap {
   return Bitmap.createBitmap(this, 0, 0, width, height, matrix, false)
 }
 
-enum class CameraFeatureStep {
-  Camera,
-  Analysis
-}
-
-interface CameraFeature {
-  data class State(
-    val capturedPhoto: Bitmap? = null,
-    val mealResponse: MealResponse? = null,
-    val messages: List<Message> = emptyList(),
-    val contextMessage: String = "",
-    val step: CameraFeatureStep = CameraFeatureStep.Camera,
-    val loading: Boolean = false
-  )
-
-  sealed interface Action {
-    data class TakePhoto(val bitmap: Bitmap) : Action
-    data class AnalyzePhoto(val bitmap: Bitmap) : Action
-    data object LogMeal : Action
-    data class UpdateContextMessage(val message: String) : Action
-    data object SendContextMessage : Action
-  }
-}
-
-class CameraViewModel(
-  private val store: CameraStore,
-  private val db: MealLogDatabase
-) : ViewModel() {
-  private val internalState = MutableStateFlow(CameraFeature.State())
-  val state = internalState.asStateFlow()
-
-  fun actions(action: CameraFeature.Action, navController: NavHostController) {
-    when (action) {
-      is CameraFeature.Action.TakePhoto -> {
-        Log.d("Camera", "Saved Photo: ${action.bitmap}")
-        viewModelScope.launch {
-          internalState.update {
-            it.copy(
-              capturedPhoto = action.bitmap,
-              step = CameraFeatureStep.Analysis
-            )
-          }
-        }
-      }
-
-      is CameraFeature.Action.AnalyzePhoto -> {
-        internalState.update { it.copy(loading = true) }
-        val messages = mutableListOf<Message>()
-        val initialMessage =
-          Message(
-            role = "user",
-            content = listOf(
-              MessageContent.Image(
-                source = ImageSource(
-                  data = action.bitmap.toBase64()
-                )
-              )
-            )
-          )
-        messages.add(initialMessage)
-        viewModelScope.launch {
-          // Send it to Claude
-          val response = ImageToCalorieClient.api.getMessages(MessagesRequest(messages = messages))
-          Log.d("Camera", "Claude Response: $response")
-
-          if (response.isSuccessful) {
-            val messagesResponse = response.body()!!
-            val meal = Json.decodeFromString<MealResponse>(
-              messagesResponse
-                .content
-                .filterIsInstance<MessageContent.Text>()
-                .first()
-                .text
-            )
-            val mealMessage = Message(
-              role = messagesResponse.role,
-              content = listOf(
-                MessageContent.Text(text = meal.foodDescription)
-              )
-            )
-            messages.add(mealMessage)
-            internalState.update { current ->
-              current.copy(
-                loading = false,
-                mealResponse = meal,
-                messages = messages.toList()
-              )
-            }
-          } else {
-            Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
-            internalState.update { current -> current.copy(loading = false) }
-          }
-        }
-      }
-
-      CameraFeature.Action.LogMeal -> {
-        viewModelScope.launch {
-          val uri = store.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
-          val log = state.value.mealResponse!!.toMealLog(uri)
-          db.mealLogDao().addMealLog(log)
-          navController.navigate("logs")
-        }
-      }
-
-      CameraFeature.Action.SendContextMessage -> {
-        viewModelScope.launch {
-          val message = Message(
-            role = "user",
-            content = listOf(
-              MessageContent.Text(text = internalState.value.contextMessage)
-            )
-          )
-          val messages = internalState.value.messages.toMutableList().apply {
-            add(message)
-          }
-          internalState.update {
-            it.copy(
-              loading = true,
-              contextMessage = "",
-              messages = messages.toList()
-            )
-          }
-
-          val response = ImageToCalorieClient.api.getMessages(MessagesRequest(messages = messages))
-
-          if (response.isSuccessful) {
-            val messagesResponse = response.body()!!
-            Log.d("Camera", "Claude Context Response: $messagesResponse")
-            val meal = Json.decodeFromString<MealResponse>(
-              messagesResponse
-                .content
-                .filterIsInstance<MessageContent.Text>()
-                .first()
-                .text
-            )
-            val mealMessage = Message(
-              role = messagesResponse.role,
-              content = listOf(
-                MessageContent.Text(text = meal.foodDescription)
-              )
-            )
-            messages.add(mealMessage)
-            internalState.update { current ->
-              current.copy(
-                loading = false,
-                mealResponse = meal,
-                messages = messages.toList()
-              )
-            }
-          } else {
-            Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
-            internalState.update { it.copy(loading = false) }
-          }
-        }
-      }
-
-      is CameraFeature.Action.UpdateContextMessage -> {
-        internalState.update { it.copy(contextMessage = action.message) }
-      }
-    }
-  }
-
-  private fun Bitmap.toBase64(): String {
-    val outputStream = ByteArrayOutputStream()
-    compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
-    val byteArray = outputStream.toByteArray()
-    return Base64.encodeToString(byteArray, Base64.NO_WRAP)
-  }
-
-  @Suppress("UNCHECKED_CAST")
-  class Factory(private val store: CameraStore, private val db: MealLogDatabase) :
-    ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-      return CameraViewModel(store, db) as T
-    }
-  }
-}
-
-fun MealResponse.toMealLog(
-  imageUri: String?,
-  timestamp: Long = System.currentTimeMillis(),
-  date: LocalDate = LocalDate.now()
-): MealLog {
-  return MealLog(
-    foodTitle = foodTitle,
-    foodDescription = foodDescription,
-    totalCalories = totalCalories,
-    valid = valid,
-    imageUri = imageUri,
-    time = timestamp,
-    logDate = date
-  )
-}

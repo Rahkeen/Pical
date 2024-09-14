@@ -5,6 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -22,14 +25,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.supergooey.caloriesnap.features.capture.CaptureFeature
+import dev.supergooey.caloriesnap.features.capture.CaptureScreen
+import dev.supergooey.caloriesnap.features.capture.CaptureViewModel
 import dev.supergooey.caloriesnap.features.dailylog.DailyLogScreen
 import dev.supergooey.caloriesnap.features.dailylog.DailyLogViewModel
 import dev.supergooey.caloriesnap.features.edit.EditLogFeature
 import dev.supergooey.caloriesnap.features.edit.EditLogScreen
 import dev.supergooey.caloriesnap.features.edit.EditLogViewModel
+import dev.supergooey.caloriesnap.features.history.LogHistoryFeature
 import dev.supergooey.caloriesnap.features.history.LogHistoryScreen
 import dev.supergooey.caloriesnap.features.history.LogHistoryViewModel
 import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
+import dev.supergooey.caloriesnap.ui.theme.DURATION_EXTRA_LONG
+import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
+import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
@@ -39,7 +49,6 @@ class MainActivity : ComponentActivity() {
     setContent {
       CalorieSnapTheme {
         App()
-//        CameraScreenAnalyzePreview()
       }
     }
   }
@@ -55,6 +64,12 @@ fun App() {
         .fillMaxSize()
         .background(color = MaterialTheme.colorScheme.background),
       navController = navController,
+      enterTransition = {
+        fadeIn(animationSpec = tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing))
+      },
+      exitTransition = {
+        fadeOut(animationSpec = tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing))
+      },
       startDestination = "logs",
     ) {
       composable(
@@ -90,21 +105,40 @@ fun App() {
         }
       }
       composable(
-        route = "camera",
-        enterTransition = { slideInHorizontally { it } },
-        exitTransition = { slideOutHorizontally { it } }
+        route = "capture",
+        enterTransition = {
+          slideInHorizontally(
+            animationSpec = tween(
+              durationMillis = DURATION_EXTRA_LONG,
+              easing = EmphasizedEasing
+            )
+          ) { it }
+        },
+        exitTransition = {
+          slideOutHorizontally(
+            animationSpec = tween(
+              durationMillis = DURATION_EXTRA_LONG,
+              easing = EmphasizedEasing
+            )
+          ) { it }
+        }
       ) {
-        val cameraViewModel = viewModel<CameraViewModel>(
-          factory = CameraViewModel.Factory(
+        val model = viewModel<CaptureViewModel>(
+          factory = CaptureViewModel.Factory(
             store = context.cameraStore(),
             db = MealLogDatabase.getDatabase(context)
           )
         )
-        val state by cameraViewModel.state.collectAsState()
-        CameraScreen(
+        val state by model.state.collectAsState()
+        CaptureScreen(
           state = state,
-          actions = {
-            cameraViewModel.actions(it, navController)
+          actions = model::actions,
+          navigation = { location ->
+            when (location) {
+              CaptureFeature.Location.Back -> {
+                navController.popBackStack()
+              }
+            }
           }
         )
       }
@@ -125,6 +159,8 @@ fun App() {
         EditLogScreen(
           state = state,
           actions = model::actions,
+          sharedTransitionScope = this@SharedTransitionLayout,
+          animatedVisibilityScope = this@composable,
           navigate = { location ->
             when (location) {
               EditLogFeature.Location.Back -> {
@@ -141,8 +177,20 @@ fun App() {
           )
         )
         val state by model.state.collectAsState()
-        LogHistoryScreen(state) {
-          navController.navigate(it.route)
+        LogHistoryScreen(
+          state = state,
+          sharedTransitionScope = this@SharedTransitionLayout,
+          animatedVisibilityScope = this@composable
+        ) { location ->
+          when (location) {
+            LogHistoryFeature.Location.Back -> {
+              navController.popBackStack()
+            }
+
+            is LogHistoryFeature.Location.Logs -> {
+              navController.navigate(location.route)
+            }
+          }
         }
       }
     }
