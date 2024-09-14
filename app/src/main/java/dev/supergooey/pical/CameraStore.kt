@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap
+package dev.supergooey.pical
 
 import android.content.ContentValues
 import android.content.Context

@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.ui.theme
+package dev.supergooey.pical.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -6,7 +6,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import dev.supergooey.caloriesnap.R
+import dev.supergooey.pical.R
 
 val plex = FontFamily(
   Font(

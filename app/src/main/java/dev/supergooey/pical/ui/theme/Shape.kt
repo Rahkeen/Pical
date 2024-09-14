@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.ui.theme
+package dev.supergooey.pical.ui.theme
 
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size

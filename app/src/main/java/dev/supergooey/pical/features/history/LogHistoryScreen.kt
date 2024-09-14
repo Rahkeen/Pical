@@ -1,4 +1,4 @@
-package dev.supergooey.caloriesnap.features.history
+package dev.supergooey.pical.features.history
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -42,18 +42,18 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import dev.supergooey.caloriesnap.MealLog
-import dev.supergooey.caloriesnap.R
-import dev.supergooey.caloriesnap.ui.theme.CalorieSnapTheme
-import dev.supergooey.caloriesnap.ui.theme.DURATION_LONG
-import dev.supergooey.caloriesnap.ui.theme.EmphasizedEasing
+import dev.supergooey.pical.MealLog
+import dev.supergooey.pical.R
+import dev.supergooey.pical.ui.theme.DURATION_LONG
+import dev.supergooey.pical.ui.theme.EmphasizedEasing
+import dev.supergooey.pical.ui.theme.PicalTheme
 import java.time.LocalDate
 
 @PreviewLightDark
 @Composable
 private fun LogHistoryScreenPreview() {
   SharedTransitionPreviewHelper { sharedTransitionScope, animatedVisibilityScope ->
-    CalorieSnapTheme {
+    PicalTheme {
       LogHistoryScreen(
         state = LogHistoryFeature.State(
           rows = listOf(
@@ -170,7 +170,7 @@ fun LogHistoryScreen(
 @Composable
 private fun HistoryScreenRowPreview() {
   SharedTransitionPreviewHelper { sharedTransitionScope, animatedVisibilityScope ->
-    CalorieSnapTheme {
+    PicalTheme {
       HistoryScreenRow(
         state = HistoryRowState(
           dayDisplay = "March 13, 1993",
