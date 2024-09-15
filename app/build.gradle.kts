@@ -26,8 +26,10 @@ android {
     val file = project.rootProject.file("project.properties")
     val properties = Properties().also { it.load(file.inputStream()) }
     val apiKey = properties.getProperty("CLAUDE_API_KEY")
+    val revenueCat = properties.getProperty("REVENUECAT_API_KEY")
 
     buildConfigField("String", "API_KEY", apiKey)
+    buildConfigField("String", "REVENUECAT_KEY", revenueCat)
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -38,7 +40,7 @@ android {
       applicationIdSuffix = ".debug"
     }
     release {
-      isDebuggable = false
+      isDebuggable = true
       isMinifyEnabled = true
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),
