@@ -11,6 +11,7 @@
 .cxx
 local.properties
 /release
+/release/*
 
 # Project Keys and Things
 project.properties
