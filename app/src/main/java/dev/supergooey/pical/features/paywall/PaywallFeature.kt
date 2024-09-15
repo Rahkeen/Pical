@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-data class PayOptionState(
+data class PackageOptionState(
   val id: String,
   val title: String,
   val priceFormatted: String,
@@ -19,11 +19,11 @@ data class PayOptionState(
 
 interface PaywallFeature {
   data class State(
-    val options: List<PayOptionState> = emptyList()
+    val options: List<PackageOptionState> = emptyList()
   )
 }
 
-class PaywallViewModel() : ViewModel() {
+class PaywallViewModel : ViewModel() {
   private val internalState = MutableStateFlow(PaywallFeature.State())
   val state = internalState.asStateFlow()
 
@@ -39,7 +39,7 @@ class PaywallViewModel() : ViewModel() {
             previousState.copy(
               options = currentOffering
                 .availablePackages
-                .map { it.toPayOptionState() }
+                .map { it.toPackageOptionState() }
             )
           }
         }
@@ -48,14 +48,14 @@ class PaywallViewModel() : ViewModel() {
   }
 }
 
-fun Package.toPayOptionState(): PayOptionState {
+fun Package.toPackageOptionState(): PackageOptionState {
   val title = if (product.period?.unit == Period.Unit.MONTH) {
     "Monthly"
   } else {
     "Annual"
   }
-  return PayOptionState(
-    id = product.id,
+  return PackageOptionState(
+    id = identifier,
     title = title,
     priceFormatted = product.price.formatted
   )

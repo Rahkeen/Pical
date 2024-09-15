@@ -1,18 +1,16 @@
 package dev.supergooey.pical.features.paywall
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -38,12 +36,12 @@ private fun PaywallScreenPreview() {
     PaywallScreen(
       state = PaywallFeature.State(
         options = listOf(
-          PayOptionState(
+          PackageOptionState(
             id = "monthly",
             title = "Monthly",
             priceFormatted = "$2.99"
           ),
-          PayOptionState(
+          PackageOptionState(
             id = "annual",
             title = "Annual",
             priceFormatted = "$23.99"
@@ -96,9 +94,9 @@ fun PaywallScreen(state: PaywallFeature.State) {
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           state.options.forEach { option ->
-            PayOptionRow(
-              title = option.title,
-              priceLabel = option.priceFormatted
+            PackageOptionRow(
+              state = option,
+              onClick = {  }
             )
           }
         }
@@ -119,17 +117,21 @@ fun PaywallScreen(state: PaywallFeature.State) {
 @Composable
 private fun PayOptionRowPreview() {
   PicalTheme {
-    PayOptionRow(
-      title = "Monthly",
-      priceLabel = "2.99"
+    PackageOptionRow(
+      state = PackageOptionState(
+        id = "rc_monthly",
+        title = "Monthly",
+        priceFormatted = "$2.99",
+      ),
+      onClick = {}
     )
   }
 }
 
 @Composable
-private fun PayOptionRow(
-  title: String,
-  priceLabel: String
+private fun PackageOptionRow(
+  state: PackageOptionState,
+  onClick: () -> Unit
 ) {
   Row(
     modifier = Modifier
@@ -137,12 +139,15 @@ private fun PayOptionRow(
       .heightIn(min = 80.dp)
       .clip(RoundedCornerShape(12.dp))
       .background(color = MaterialTheme.colorScheme.surfaceContainer)
+      .clickable {
+        onClick()
+      }
       .padding(16.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Column {
       Text(
-        text = title,
+        text = state.title,
         style = MaterialTheme.typography.displayMedium,
         color = MaterialTheme.colorScheme.onSurface,
         fontSize = 14.sp,
@@ -157,7 +162,7 @@ private fun PayOptionRow(
         .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
       Text(
-        text = priceLabel,
+        text = state.priceFormatted,
         style = MaterialTheme.typography.displayMedium,
         color = MaterialTheme.colorScheme.primary,
         fontSize = 14.sp,

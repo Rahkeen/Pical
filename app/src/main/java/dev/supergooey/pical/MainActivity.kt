@@ -36,7 +36,6 @@ import dev.supergooey.pical.features.edit.EditLogViewModel
 import dev.supergooey.pical.features.history.LogHistoryFeature
 import dev.supergooey.pical.features.history.LogHistoryScreen
 import dev.supergooey.pical.features.history.LogHistoryViewModel
-import dev.supergooey.pical.features.paywall.PaywallFeature
 import dev.supergooey.pical.features.paywall.PaywallScreen
 import dev.supergooey.pical.features.paywall.PaywallViewModel
 import dev.supergooey.pical.ui.theme.DURATION_EXTRA_LONG
@@ -68,10 +67,20 @@ fun App() {
         .background(color = MaterialTheme.colorScheme.background),
       navController = navController,
       enterTransition = {
-        fadeIn(animationSpec = tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing))
+        fadeIn(
+          animationSpec = tween(
+            durationMillis = DURATION_LONG,
+            easing = EmphasizedEasing
+          )
+        )
       },
       exitTransition = {
-        fadeOut(animationSpec = tween(durationMillis = DURATION_LONG, easing = EmphasizedEasing))
+        fadeOut(
+          animationSpec = tween(
+            durationMillis = DURATION_LONG,
+            easing = EmphasizedEasing
+          )
+        )
       },
       startDestination = "paywall",
     ) {
@@ -200,9 +209,7 @@ fun App() {
       composable("paywall") {
         val model = viewModel<PaywallViewModel>()
         val state by model.state.collectAsState()
-        PaywallScreen(
-          state = state,
-        )
+        PaywallScreen(state = state)
       }
     }
   }
