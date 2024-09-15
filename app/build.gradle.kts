@@ -20,8 +20,8 @@ android {
     applicationId = "dev.supergooey.pical"
     minSdk = 33
     targetSdk = 35
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 2
+    versionName = "1.0-internal"
 
     val file = project.rootProject.file("project.properties")
     val properties = Properties().also { it.load(file.inputStream()) }
@@ -40,7 +40,7 @@ android {
       applicationIdSuffix = ".debug"
     }
     release {
-      isDebuggable = true
+      isDebuggable = false
       isMinifyEnabled = true
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),

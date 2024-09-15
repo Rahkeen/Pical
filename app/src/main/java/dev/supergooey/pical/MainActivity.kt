@@ -82,7 +82,7 @@ fun App() {
           )
         )
       },
-      startDestination = "paywall",
+      startDestination = "logs",
     ) {
       composable(
         route = "logs?date={date}",
