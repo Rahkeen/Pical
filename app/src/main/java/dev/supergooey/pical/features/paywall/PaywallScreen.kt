@@ -1,5 +1,7 @@
 package dev.supergooey.pical.features.paywall
 
+import android.app.Activity
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,10 +25,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.purchaseWith
 import dev.supergooey.pical.ui.theme.PicalTheme
 
 @Preview
@@ -34,26 +44,15 @@ import dev.supergooey.pical.ui.theme.PicalTheme
 private fun PaywallScreenPreview() {
   PicalTheme {
     PaywallScreen(
-      state = PaywallFeature.State(
-        options = listOf(
-          PackageOptionState(
-            id = "monthly",
-            title = "Monthly",
-            priceFormatted = "$2.99"
-          ),
-          PackageOptionState(
-            id = "annual",
-            title = "Annual",
-            priceFormatted = "$23.99"
-          )
-        )
-      )
+      state = PaywallFeature.State()
     )
   }
 }
 
 @Composable
 fun PaywallScreen(state: PaywallFeature.State) {
+  val activity = (LocalContext.current) as Activity
+
   Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) { paddingValues ->
     Surface(
       modifier = Modifier.padding(paddingValues),
@@ -94,9 +93,33 @@ fun PaywallScreen(state: PaywallFeature.State) {
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           state.options.forEach { option ->
+            val title = when (option.packageType) {
+              PackageType.MONTHLY -> "Monthly"
+              else -> "Yearly"
+            }
+            val price = option.product.price.formatted
             PackageOptionRow(
-              state = option,
-              onClick = {  }
+              title = title,
+              priceLabel = price,
+              onClick = {
+                Purchases.sharedInstance.purchaseWith(
+                  purchaseParams = PurchaseParams(
+                    builder = PurchaseParams.Builder(
+                      activity = activity,
+                      packageToPurchase = option
+                    )
+                  ),
+                  onSuccess = { storeTransaction, customerInfo ->
+                    Log.d("RevenueCat", "Success: ${customerInfo.entitlements}")
+                  },
+                  onError = { purchasesError, userCancelled ->
+                    if (userCancelled) {
+                      Log.d("RevenueCat", "Cancelled")
+                    }
+                    Log.e("RevenueCat", "Error: ${purchasesError.message}")
+                  }
+                )
+              }
             )
           }
         }
@@ -118,11 +141,8 @@ fun PaywallScreen(state: PaywallFeature.State) {
 private fun PayOptionRowPreview() {
   PicalTheme {
     PackageOptionRow(
-      state = PackageOptionState(
-        id = "rc_monthly",
-        title = "Monthly",
-        priceFormatted = "$2.99",
-      ),
+      title = "Monthly",
+      priceLabel = "$2.99",
       onClick = {}
     )
   }
@@ -130,7 +150,8 @@ private fun PayOptionRowPreview() {
 
 @Composable
 private fun PackageOptionRow(
-  state: PackageOptionState,
+  title: String,
+  priceLabel: String,
   onClick: () -> Unit
 ) {
   Row(
@@ -147,7 +168,7 @@ private fun PackageOptionRow(
   ) {
     Column {
       Text(
-        text = state.title,
+        text = title,
         style = MaterialTheme.typography.displayMedium,
         color = MaterialTheme.colorScheme.onSurface,
         fontSize = 14.sp,
@@ -162,7 +183,7 @@ private fun PackageOptionRow(
         .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
       Text(
-        text = state.priceFormatted,
+        text = priceLabel,
         style = MaterialTheme.typography.displayMedium,
         color = MaterialTheme.colorScheme.primary,
         fontSize = 14.sp,
