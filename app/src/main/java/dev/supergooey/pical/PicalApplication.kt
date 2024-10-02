@@ -8,6 +8,8 @@ import com.revenuecat.purchases.PurchasesConfiguration
 
 class PicalApplication: Application() {
   lateinit var cameraStore: CameraStore
+  lateinit var calorieClient: CalorieClient
+
   override fun onCreate() {
     super.onCreate()
 
@@ -18,10 +20,16 @@ class PicalApplication: Application() {
         apiKey = BuildConfig.REVENUECAT_KEY
       ).build()
     )
+
     cameraStore = CameraStore(applicationContext)
+    calorieClient = CalorieClient()
   }
 }
 
 fun Context.cameraStore(): CameraStore {
   return (this.applicationContext as PicalApplication).cameraStore
+}
+
+fun Context.calorieClient(): CalorieClient {
+  return (this.applicationContext as PicalApplication).calorieClient
 }

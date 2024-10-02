@@ -1,6 +1,5 @@
 package dev.supergooey.pical
 
-import dev.supergooey.pical.BuildConfig
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -34,6 +33,11 @@ data class MessagesRequest(
   val messages: List<Message>
 )
 
+sealed interface CalorieMessagesResponse {
+  data class Success(val messagesResponse: MessagesResponse): CalorieMessagesResponse
+  data class Failure(val error: String?):  CalorieMessagesResponse
+}
+
 @Serializable
 data class MessagesResponse(
   val id: String,
@@ -63,11 +67,11 @@ data class Message(
 sealed class MessageContent {
   @Serializable
   @SerialName("text")
-  data class Text(val text: String): MessageContent()
+  data class Text(val text: String) : MessageContent()
 
   @Serializable
   @SerialName("image")
-  data class Image(val source: ImageSource): MessageContent()
+  data class Image(val source: ImageSource) : MessageContent()
 }
 
 @Serializable
@@ -91,7 +95,7 @@ interface ClaudeService {
   suspend fun getMessages(@Body request: MessagesRequest): retrofit2.Response<MessagesResponse>
 }
 
-object ImageToCalorieClient {
+class CalorieClient {
   private val json = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
@@ -106,10 +110,19 @@ object ImageToCalorieClient {
     .addConverterFactory(json.asConverterFactory("application/json; charset=UTF8".toMediaType()))
     .build()
 
-  val api: ClaudeService = retrofit.create(ClaudeService::class.java)
+  private val api = retrofit.create(ClaudeService::class.java)
+
+  suspend fun getMessages(request: MessagesRequest): CalorieMessagesResponse {
+    val response = api.getMessages(request)
+    return if (response.isSuccessful) {
+      CalorieMessagesResponse.Success(response.body()!!)
+    } else {
+      CalorieMessagesResponse.Failure(response.errorBody()?.string())
+    }
+  }
 }
 
-internal class HeaderInterceptor: Interceptor {
+internal class HeaderInterceptor : Interceptor {
   override fun intercept(chain: Interceptor.Chain): Response {
     val modifiedRequest = chain.request()
       .newBuilder()

@@ -8,7 +8,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.supergooey.pical.CameraStore
 import dev.supergooey.pical.ImageSource
-import dev.supergooey.pical.ImageToCalorieClient
+import dev.supergooey.pical.CalorieClient
+import dev.supergooey.pical.CalorieMessagesResponse
 import dev.supergooey.pical.MealLog
 import dev.supergooey.pical.MealLogDatabase
 import dev.supergooey.pical.MealResponse
@@ -53,8 +54,9 @@ interface CaptureFeature {
 }
 
 class CaptureViewModel(
-  private val store: CameraStore,
-  private val db: MealLogDatabase
+  private val calorieClient: CalorieClient,
+  private val cameraStore: CameraStore,
+  private val logDatabase: MealLogDatabase
 ) : ViewModel() {
   private val internalState = MutableStateFlow(CaptureFeature.State())
   val state = internalState.asStateFlow()
@@ -90,44 +92,47 @@ class CaptureViewModel(
         messages.add(initialMessage)
         viewModelScope.launch {
           // Send it to Claude
-          val response = ImageToCalorieClient.api.getMessages(MessagesRequest(messages = messages))
+          val response = calorieClient.getMessages(MessagesRequest(messages = messages))
           Log.d("Camera", "Claude Response: $response")
 
-          if (response.isSuccessful) {
-            val messagesResponse = response.body()!!
-            val meal = Json.decodeFromString<MealResponse>(
-              messagesResponse
-                .content
-                .filterIsInstance<MessageContent.Text>()
-                .first()
-                .text
-            )
-            val mealMessage = Message(
-              role = messagesResponse.role,
-              content = listOf(
-                MessageContent.Text(text = meal.foodDescription)
+          when (response) {
+            is CalorieMessagesResponse.Success -> {
+              val messagesResponse = response.messagesResponse
+              val meal = Json.decodeFromString<MealResponse>(
+                messagesResponse
+                  .content
+                  .filterIsInstance<MessageContent.Text>()
+                  .first()
+                  .text
               )
-            )
-            messages.add(mealMessage)
-            internalState.update { current ->
-              current.copy(
-                loading = false,
-                mealResponse = meal,
-                messages = messages.toList()
+              val mealMessage = Message(
+                role = messagesResponse.role,
+                content = listOf(
+                  MessageContent.Text(text = meal.foodDescription)
+                )
               )
+              messages.add(mealMessage)
+              internalState.update { current ->
+                current.copy(
+                  loading = false,
+                  mealResponse = meal,
+                  messages = messages.toList()
+                )
+              }
             }
-          } else {
-            Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
-            internalState.update { current -> current.copy(loading = false) }
+            is CalorieMessagesResponse.Failure -> {
+              Log.d("Camera", "Claude Error Response: ${response.error}")
+              internalState.update { current -> current.copy(loading = false) }
+            }
           }
         }
       }
 
       CaptureFeature.Action.LogMeal -> {
         viewModelScope.launch {
-          val uri = store.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
+          val uri = cameraStore.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
           val log = state.value.mealResponse!!.toMealLog(uri)
-          db.mealLogDao().addMealLog(log)
+          logDatabase.mealLogDao().addMealLog(log)
           internalState.update { it.copy(finished = true) }
         }
       }
@@ -151,35 +156,38 @@ class CaptureViewModel(
             )
           }
 
-          val response = ImageToCalorieClient.api.getMessages(MessagesRequest(messages = messages))
+          val response = calorieClient.getMessages(MessagesRequest(messages = messages))
 
-          if (response.isSuccessful) {
-            val messagesResponse = response.body()!!
-            Log.d("Camera", "Claude Context Response: $messagesResponse")
-            val meal = Json.decodeFromString<MealResponse>(
-              messagesResponse
-                .content
-                .filterIsInstance<MessageContent.Text>()
-                .first()
-                .text
-            )
-            val mealMessage = Message(
-              role = messagesResponse.role,
-              content = listOf(
-                MessageContent.Text(text = meal.foodDescription)
+          when (response) {
+            is CalorieMessagesResponse.Success -> {
+              val messagesResponse = response.messagesResponse
+              Log.d("Camera", "Claude Context Response: $messagesResponse")
+              val meal = Json.decodeFromString<MealResponse>(
+                messagesResponse
+                  .content
+                  .filterIsInstance<MessageContent.Text>()
+                  .first()
+                  .text
               )
-            )
-            messages.add(mealMessage)
-            internalState.update { current ->
-              current.copy(
-                loading = false,
-                mealResponse = meal,
-                messages = messages.toList()
+              val mealMessage = Message(
+                role = messagesResponse.role,
+                content = listOf(
+                  MessageContent.Text(text = meal.foodDescription)
+                )
               )
+              messages.add(mealMessage)
+              internalState.update { current ->
+                current.copy(
+                  loading = false,
+                  mealResponse = meal,
+                  messages = messages.toList()
+                )
+              }
             }
-          } else {
-            Log.d("Camera", "Claude Error Response: ${response.errorBody()?.string()}")
-            internalState.update { it.copy(loading = false) }
+            is CalorieMessagesResponse.Failure -> {
+              Log.d("Camera", "Claude Error Response: ${response.error}")
+              internalState.update { current -> current.copy(loading = false) }
+            }
           }
         }
       }
@@ -198,10 +206,14 @@ class CaptureViewModel(
   }
 
   @Suppress("UNCHECKED_CAST")
-  class Factory(private val store: CameraStore, private val db: MealLogDatabase) :
+  class Factory(
+    private val calorieClient: CalorieClient,
+    private val cameraStore: CameraStore,
+    private val logDatabase: MealLogDatabase
+  ) :
     ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-      return CaptureViewModel(store, db) as T
+      return CaptureViewModel(calorieClient, cameraStore, logDatabase) as T
     }
   }
 }
