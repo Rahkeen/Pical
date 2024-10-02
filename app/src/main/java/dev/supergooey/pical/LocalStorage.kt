@@ -55,6 +55,38 @@ data class MealLogsByDay(
   val logs: List<MealLog>
 )
 
+class FakeLogDao: MealLogDao {
+  override suspend fun insertMealDay(mealDay: MealDay) {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun insertMealLog(mealLog: MealLog) {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun getMealLog(id: Int): MealLog {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun updateMealLog(log: MealLog) {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun deleteMealLog(log: MealLog) {
+    TODO("Not yet implemented")
+  }
+
+  override fun getMealLogsByDay(date: LocalDate): Flow<MealLogsByDay?> {
+    TODO("Not yet implemented")
+  }
+
+  override fun getAllMealLogsByDay(): Flow<List<MealLogsByDay>> {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun addMealLog(mealLog: MealLog) = Unit
+}
+
 @Dao
 interface MealLogDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)

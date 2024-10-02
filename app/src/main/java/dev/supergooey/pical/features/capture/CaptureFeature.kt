@@ -6,12 +6,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dev.supergooey.pical.CameraStore
-import dev.supergooey.pical.ImageSource
 import dev.supergooey.pical.CalorieClient
 import dev.supergooey.pical.CalorieMessagesResponse
+import dev.supergooey.pical.ImageSource
+import dev.supergooey.pical.ImageStore
 import dev.supergooey.pical.MealLog
-import dev.supergooey.pical.MealLogDatabase
+import dev.supergooey.pical.MealLogDao
 import dev.supergooey.pical.MealResponse
 import dev.supergooey.pical.Message
 import dev.supergooey.pical.MessageContent
@@ -55,8 +55,8 @@ interface CaptureFeature {
 
 class CaptureViewModel(
   private val calorieClient: CalorieClient,
-  private val cameraStore: CameraStore,
-  private val logDatabase: MealLogDatabase
+  private val imageStore: ImageStore,
+  private val logDao: MealLogDao
 ) : ViewModel() {
   private val internalState = MutableStateFlow(CaptureFeature.State())
   val state = internalState.asStateFlow()
@@ -130,9 +130,9 @@ class CaptureViewModel(
 
       CaptureFeature.Action.LogMeal -> {
         viewModelScope.launch {
-          val uri = cameraStore.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
+          val uri = imageStore.saveImageLocally(state.value.capturedPhoto!!).getOrNull()
           val log = state.value.mealResponse!!.toMealLog(uri)
-          logDatabase.mealLogDao().addMealLog(log)
+          logDao.addMealLog(log)
           internalState.update { it.copy(finished = true) }
         }
       }
@@ -208,12 +208,12 @@ class CaptureViewModel(
   @Suppress("UNCHECKED_CAST")
   class Factory(
     private val calorieClient: CalorieClient,
-    private val cameraStore: CameraStore,
-    private val logDatabase: MealLogDatabase
+    private val imageStore: ImageStore,
+    private val logDao: MealLogDao
   ) :
     ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-      return CaptureViewModel(calorieClient, cameraStore, logDatabase) as T
+      return CaptureViewModel(calorieClient, imageStore, logDao) as T
     }
   }
 }

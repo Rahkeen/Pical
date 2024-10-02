@@ -61,6 +61,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -95,6 +96,9 @@ import androidx.graphics.shapes.circle
 import androidx.graphics.shapes.star
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.supergooey.pical.Composer
+import dev.supergooey.pical.FakeCalorieClient
+import dev.supergooey.pical.FakeImageStore
+import dev.supergooey.pical.FakeLogDao
 import dev.supergooey.pical.MealResponse
 import dev.supergooey.pical.Message
 import dev.supergooey.pical.MessageContent
@@ -106,6 +110,25 @@ import dev.supergooey.pical.ui.theme.MorphPolygonShape
 import dev.supergooey.pical.ui.theme.PicalTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+@Preview
+@Composable
+private fun CaptureScreenFunctionalPreview() {
+  val model = remember {
+    CaptureViewModel(
+      calorieClient = FakeCalorieClient(),
+      imageStore = FakeImageStore(),
+      logDao = FakeLogDao()
+    )
+  }
+
+  val state by model.state.collectAsState()
+  CaptureScreen(
+    state = state,
+    actions = model::actions,
+    navigation = {}
+  )
+}
 
 @Preview
 @Composable
@@ -388,11 +411,17 @@ fun AnalysisStep(
     val response = state.mealResponse
     if (response != null) {
       launch {
-        caloriePosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+        caloriePosition.animateTo(
+          0f,
+          spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+        )
       }
       launch {
         delay(50)
-        submitPosition.animateTo(0f, spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy))
+        submitPosition.animateTo(
+          0f,
+          spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+        )
       }
     } else {
       caloriePosition.animateTo(200f, spring())
@@ -423,8 +452,10 @@ fun AnalysisStep(
             val content = (message.content[0] as MessageContent.Text).text
             val isUser = message.role == "user"
             val alignment = if (isUser) Alignment.TopEnd else Alignment.TopStart
-            val color = if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer
-            val textColor = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+            val color =
+              if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer
+            val textColor =
+              if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
 
             Box(
               modifier = Modifier

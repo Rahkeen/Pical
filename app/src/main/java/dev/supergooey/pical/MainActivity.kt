@@ -138,8 +138,8 @@ fun App() {
         val model = viewModel<CaptureViewModel>(
           factory = CaptureViewModel.Factory(
             calorieClient = context.calorieClient(),
-            cameraStore = context.cameraStore(),
-            logDatabase = MealLogDatabase.getDatabase(context)
+            imageStore = context.imageStore(),
+            logDao = MealLogDatabase.getDatabase(context).mealLogDao()
           )
         )
         val state by model.state.collectAsState()

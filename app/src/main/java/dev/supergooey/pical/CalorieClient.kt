@@ -1,5 +1,6 @@
 package dev.supergooey.pical
 
+import kotlinx.coroutines.delay
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -90,12 +91,48 @@ data class MealResponse(
 )
 
 interface ClaudeService {
-
   @POST("messages")
   suspend fun getMessages(@Body request: MessagesRequest): retrofit2.Response<MessagesResponse>
 }
 
-class CalorieClient {
+interface CalorieClient {
+  suspend fun getMessages(request: MessagesRequest): CalorieMessagesResponse
+}
+
+class FakeCalorieClient: CalorieClient {
+  override suspend fun getMessages(request: MessagesRequest): CalorieMessagesResponse {
+    delay(3000)
+    return CalorieMessagesResponse.Success(
+      messagesResponse = MessagesResponse(
+        id = "dead-beef",
+        model = "super-cool-model",
+        type = "type",
+        role = "system",
+        stopReason = "",
+        stopSequence = null,
+        usage = Usage(
+          inputTokens = 1000,
+          outputTokens = 1000
+        ),
+        content = listOf(
+          MessageContent.Text(
+            text =  Json.encodeToString(
+              serializer = MealResponse.serializer(),
+              MealResponse(
+                foodTitle = "Hello Avocado",
+                foodDescription = "Lorem Ipsum Avocado Bravado Silly Billy Goat",
+                totalCalories = 150,
+                valid = true
+              )
+            )
+          )
+        )
+      )
+    )
+  }
+}
+
+class RealCalorieClient: CalorieClient {
   private val json = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
@@ -112,7 +149,7 @@ class CalorieClient {
 
   private val api = retrofit.create(ClaudeService::class.java)
 
-  suspend fun getMessages(request: MessagesRequest): CalorieMessagesResponse {
+  override suspend fun getMessages(request: MessagesRequest): CalorieMessagesResponse {
     val response = api.getMessages(request)
     return if (response.isSuccessful) {
       CalorieMessagesResponse.Success(response.body()!!)

@@ -8,11 +8,21 @@ import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class CameraStore(context: Context) {
+interface ImageStore {
+  suspend fun saveImageLocally(bitmap: Bitmap): Result<String>
+}
+
+class FakeImageStore: ImageStore {
+  override suspend fun saveImageLocally(bitmap: Bitmap): Result<String> {
+    return Result.success("content://storage/test.jpg")
+  }
+}
+
+class RealImageStore(context: Context): ImageStore {
   private val resolver = context.contentResolver
   private val contentUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
-  suspend fun saveImageLocally(bitmap: Bitmap): Result<String> = withContext(Dispatchers.IO) {
+  override suspend fun saveImageLocally(bitmap: Bitmap): Result<String> = withContext(Dispatchers.IO) {
     val timestamp = System.currentTimeMillis()
     val contentValues = ContentValues().apply   {
       put(MediaStore.Images.Media.DISPLAY_NAME, "image-$timestamp.jpg")
